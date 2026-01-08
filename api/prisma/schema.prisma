@@ -1,0 +1,482 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+  id                  String        @id @default(uuid())
+  email               String        @unique
+  name                String
+  password            String        // hashed
+  hashedRefreshToken  String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  
+  // Relations
+  companyUsers        CompanyUser[]
+  auditLogs           AuditLog[]
+  journals            Journal[]     // journals created by this user
+  
+  @@map("users")
+}
+
+// ============================================
+// MULTI-COMPANY
+// ============================================
+
+model Company {
+  id              String    @id @default(uuid())
+  name            String
+  slug            String    @unique
+  baseCurrency    String    @default("IDR") // ISO 4217 currency code
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  companyUsers        CompanyUser[]
+  accounts            Account[]
+  accountingPeriods   AccountingPeriod[]
+  journals            Journal[]
+  exchangeRates       ExchangeRate[]
+  customers           Customer[]
+  vendors             Vendor[]
+  products            Product[]
+  taxes               Tax[]
+  salesInvoices       SalesInvoice[]
+  purchaseBills       PurchaseBill[]
+  payments            Payment[]
+  auditLogs           AuditLog[]
+  
+  @@map("companies")
+}
+
+model CompanyUser {
+  id         String   @id @default(uuid())
+  userId     String
+  companyId  String
+  role       Role     @default(FINANCE)
+  status     CompanyUserStatus @default(PENDING)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, companyId])
+  @@map("company_users")
+}
+
+enum Role {
+  ADMIN
+  ACCOUNTANT
+  FINANCE
+  AUDITOR
+}
+
+enum CompanyUserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============================================
+// CHART OF ACCOUNTS
+// ============================================
+
+model Account {
+  id              String      @id @default(uuid())
+  companyId       String
+  code            String      // Account code (e.g., "1000", "1100")
+  name            String
+  description     String?
+  type            AccountType
+  classification  String?     // E.g. "Current Asset"
+  parentId        String?     // For hierarchy
+  isPosting       Boolean     @default(true) // True = Detail/Postable, False = Header
+  isLocked        Boolean     @default(false)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent          Account?    @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children        Account[]   @relation("AccountHierarchy")
+  journalLines    JournalLine[]
+  
+  @@unique([companyId, code])
+  @@index([companyId, type])
+  @@map("accounts")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+// ============================================
+// ACCOUNTING PERIODS
+// ============================================
+
+model AccountingPeriod {
+  id          String    @id @default(uuid())
+  companyId   String
+  name        String    // e.g., "January 2026"
+  startDate   DateTime
+  endDate     DateTime
+  status      PeriodStatus @default(OPEN)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  journals    Journal[]
+  
+  @@unique([companyId, name])
+  @@map("accounting_periods")
+}
+
+enum PeriodStatus {
+  OPEN
+  CLOSED
+}
+
+// ============================================
+// JOURNAL ENTRIES (Core Accounting)
+// ============================================
+
+model Journal {
+  id              String      @id @default(uuid())
+  companyId       String
+  periodId        String
+  journalNumber   String      // Auto-generated sequence number
+  date            DateTime
+  description     String
+  reference       String?     // Optional reference (e.g., invoice number)
+  isReversed      Boolean     @default(false)
+  reversedById    String?     @unique // ID of the reversing journal (unique for one-to-one relation)
+  createdById     String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  period          AccountingPeriod @relation(fields: [periodId], references: [id])
+  createdBy       User        @relation(fields: [createdById], references: [id])
+  journalLines    JournalLine[]
+  reversedBy      Journal?    @relation("JournalReversal", fields: [reversedById], references: [id])
+  reversingJournal Journal?   @relation("JournalReversal")
+  
+  @@unique([companyId, journalNumber])
+  @@index([companyId, date])
+  @@map("journals")
+}
+
+model JournalLine {
+  id          String    @id @default(uuid())
+  journalId   String
+  accountId   String
+  debit       Decimal   @default(0) @db.Decimal(15, 2)
+  credit      Decimal   @default(0) @db.Decimal(15, 2)
+  description String?
+  createdAt   DateTime  @default(now())
+  
+  // Relations
+  journal     Journal   @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  account     Account   @relation(fields: [accountId], references: [id])
+  
+  @@index([journalId])
+  @@index([accountId])
+  @@map("journal_lines")
+}
+
+// ============================================
+// CURRENCY & EXCHANGE RATES
+// ============================================
+
+model ExchangeRate {
+  id          String    @id @default(uuid())
+  companyId   String
+  currency    String    // ISO 4217 code (e.g., "USD", "EUR")
+  rate        Decimal   @db.Decimal(15, 6) // Exchange rate to base currency
+  date        DateTime
+  source      String    @default("Bank Indonesia API")
+  createdAt   DateTime  @default(now())
+  
+  // Relations
+  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([companyId, currency, date])
+  @@map("exchange_rates")
+}
+
+// ============================================
+// MASTER DATA
+// ============================================
+
+model Customer {
+  id            String    @id @default(uuid())
+  companyId     String
+  code          String
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  taxId         String?   // NPWP for Indonesia
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  salesInvoices SalesInvoice[]
+  
+  @@unique([companyId, code])
+  @@map("customers")
+}
+
+model Vendor {
+  id            String    @id @default(uuid())
+  companyId     String
+  code          String
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  taxId         String?   // NPWP for Indonesia
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  purchaseBills PurchaseBill[]
+  
+  @@unique([companyId, code])
+  @@map("vendors")
+}
+
+model Product {
+  id            String    @id @default(uuid())
+  companyId     String
+  code          String
+  name          String
+  description   String?
+  type          ProductType @default(SERVICE)
+  price         Decimal   @db.Decimal(15, 2)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  salesInvoiceLines SalesInvoiceLine[]
+  purchaseBillLines PurchaseBillLine[]
+  
+  @@unique([companyId, code])
+  @@map("products")
+}
+
+enum ProductType {
+  GOODS
+  SERVICE
+}
+
+model Tax {
+  id            String    @id @default(uuid())
+  companyId     String
+  code          String
+  name          String    // e.g., "PPN 11%", "PPh 23"
+  type          TaxType
+  rate          Decimal   @db.Decimal(5, 2) // Percentage
+  accountId     String?   // Tax account in COA
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([companyId, code])
+  @@map("taxes")
+}
+
+enum TaxType {
+  PPN    // VAT
+  PPH    // Income Tax
+  OTHER
+}
+
+// ============================================
+// TRANSACTION MODULES
+// ============================================
+
+model SalesInvoice {
+  id              String    @id @default(uuid())
+  companyId       String
+  customerId      String
+  invoiceNumber   String
+  date            DateTime
+  dueDate         DateTime?
+  subtotal        Decimal   @db.Decimal(15, 2)
+  taxAmount       Decimal   @default(0) @db.Decimal(15, 2)
+  total           Decimal   @db.Decimal(15, 2)
+  journalId       String?   @unique // Auto-generated journal
+  notes           String?
+  status          InvoiceStatus @default(DRAFT)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customer        Customer  @relation(fields: [customerId], references: [id])
+  lines           SalesInvoiceLine[]
+  
+  @@unique([companyId, invoiceNumber])
+  @@map("sales_invoices")
+}
+
+model SalesInvoiceLine {
+  id              String    @id @default(uuid())
+  invoiceId       String
+  productId       String
+  description     String
+  quantity        Decimal   @db.Decimal(10, 2)
+  unitPrice       Decimal   @db.Decimal(15, 2)
+  amount          Decimal   @db.Decimal(15, 2)
+  
+  // Relations
+  invoice         SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product         Product   @relation(fields: [productId], references: [id])
+  
+  @@map("sales_invoice_lines")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  POSTED
+  PAID
+  CANCELLED
+}
+
+model PurchaseBill {
+  id              String    @id @default(uuid())
+  companyId       String
+  vendorId        String
+  billNumber      String
+  date            DateTime
+  dueDate         DateTime?
+  subtotal        Decimal   @db.Decimal(15, 2)
+  taxAmount       Decimal   @default(0) @db.Decimal(15, 2)
+  total           Decimal   @db.Decimal(15, 2)
+  journalId       String?   @unique // Auto-generated journal
+  notes           String?
+  status          BillStatus @default(DRAFT)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vendor          Vendor    @relation(fields: [vendorId], references: [id])
+  lines           PurchaseBillLine[]
+  
+  @@unique([companyId, billNumber])
+  @@map("purchase_bills")
+}
+
+model PurchaseBillLine {
+  id              String    @id @default(uuid())
+  billId          String
+  productId       String
+  description     String
+  quantity        Decimal   @db.Decimal(10, 2)
+  unitPrice       Decimal   @db.Decimal(15, 2)
+  amount          Decimal   @db.Decimal(15, 2)
+  
+  // Relations
+  bill            PurchaseBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  product         Product   @relation(fields: [productId], references: [id])
+  
+  @@map("purchase_bill_lines")
+}
+
+enum BillStatus {
+  DRAFT
+  POSTED
+  PAID
+  CANCELLED
+}
+
+model Payment {
+  id              String    @id @default(uuid())
+  companyId       String
+  paymentNumber   String
+  date            DateTime
+  amount          Decimal   @db.Decimal(15, 2)
+  type            PaymentType
+  reference       String?   // Invoice/Bill reference
+  journalId       String?   @unique // Auto-generated journal
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([companyId, paymentNumber])
+  @@map("payments")
+}
+
+enum PaymentType {
+  RECEIPT    // Customer payment
+  PAYMENT    // Vendor payment
+  TRANSFER   // Internal transfer
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id            String    @id @default(uuid())
+  companyId     String
+  userId        String
+  entity        String    // Table name (e.g., "journals", "accounts")
+  entityId      String    // ID of the affected record
+  action        AuditAction
+  beforeValue   Json?     // Snapshot before change
+  afterValue    Json?     // Snapshot after change
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id])
+  
+  @@index([companyId, entity, entityId])
+  @@index([companyId, createdAt])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  EXPORT
+}

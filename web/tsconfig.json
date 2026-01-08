@@ -1,0 +1,28 @@
+{
+  "extends": "./.nuxt/tsconfig.json",
+  "include": ["**/*.ts", "**/*.d.ts", "**/*.tsx", "**/*.vue", "./**/*.ext"],
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "jsx": "preserve",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["node", "@nuxtjs/composition-api", "vite/client"],
+    "allowJs": true,
+    "lib": ["esnext", "dom"],
+    "paths": {
+      "@/*": ["./*"],
+      "~/*": ["./*"]
+    },
+    "isolatedModules": true
+  },
+  "exclude": ["node_modules", "functions"],
+  "plugins": [
+    {
+      "name": "typescript-vue-plugin"
+    }
+  ]
+}

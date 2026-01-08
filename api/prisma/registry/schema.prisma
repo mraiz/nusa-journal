@@ -1,0 +1,94 @@
+// Tenant Registry Schema
+// This schema defines the registry database that tracks all tenant databases
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/registry-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// TENANT REGISTRY
+// ============================================
+
+model Tenant {
+  id          String       @id @default(uuid())
+  slug        String       @unique // Company URL slug (e.g., "pt-media-nusa")
+  name        String       // Company display name
+  
+  // Database connection details
+  dbHost      String       @default("localhost")
+  dbPort      Int          @default(5432)
+  dbName      String       @unique // Tenant database name
+  dbUsername  String       // Database user (encrypted)
+  dbPassword  String       // Database password (encrypted)
+  
+  // Status and metadata
+  status      TenantStatus @default(ACTIVE)
+  plan        TenantPlan   @default(STARTER)
+  maxUsers    Int          @default(5)
+  
+  // Timestamps
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  suspendedAt DateTime?
+  deletedAt   DateTime?
+  
+  // Relations
+  activities  TenantActivity[]
+  
+  @@index([status])
+  @@index([slug])
+  @@map("tenants")
+}
+
+enum TenantStatus {
+  ACTIVE      // Operational
+  SUSPENDED   // Temporarily disabled
+  PROVISIONING // Database being created
+  MIGRATING   // Running migrations
+  DELETED     // Soft deleted
+}
+
+enum TenantPlan {
+  STARTER     // Basic plan
+  BUSINESS    // Medium plan
+  ENTERPRISE  // Full features
+}
+
+// ============================================
+// TENANT ACTIVITY LOG
+// ============================================
+
+model TenantActivity {
+  id          String   @id @default(uuid())
+  tenantId    String
+  action      String   // e.g., "DATABASE_CREATED", "MIGRATION_COMPLETED"
+  details     Json?
+  status      String   // SUCCESS, FAILED, PENDING
+  errorMessage String?
+  createdAt   DateTime @default(now())
+  
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId, createdAt])
+  @@map("tenant_activities")
+}
+
+// ============================================
+// TENANT DATABASE METADATA
+// ============================================
+
+model TenantMigration {
+  id              String   @id @default(uuid())
+  tenantSlug      String
+  migrationName   String   // e.g., "20240108_init"
+  appliedAt       DateTime @default(now())
+  checksum        String   // Migration file checksum
+  
+  @@unique([tenantSlug, migrationName])
+  @@map("tenant_migrations")
+}
