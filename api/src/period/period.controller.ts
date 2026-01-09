@@ -5,11 +5,16 @@ import { CreatePeriodDto } from './dto/create-period.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { ClosingService } from './closing.service';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller(':tenantSlug/periods')
 @UseGuards(JwtAuthGuard)
 export class PeriodController {
-  constructor(private readonly periodService: PeriodService) {}
+  constructor(
+    private readonly periodService: PeriodService,
+    private readonly closingService: ClosingService,
+  ) {}
 
   // ... createPeriod ...
 
@@ -36,8 +41,11 @@ export class PeriodController {
   @UseGuards(RolesGuard)
   @Roles('ADMIN')
   @HttpCode(HttpStatus.OK)
-  async closePeriod(@Param('id') id: string) {
-    return this.periodService.closePeriod(id);
+  async closePeriod(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.closingService.closePeriod(id, { userId: user.userId, email: user.email });
   }
 
   /**

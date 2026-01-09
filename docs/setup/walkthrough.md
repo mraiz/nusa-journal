@@ -423,3 +423,56 @@ web/
 - Dashboard UI
 
 The foundation is solid and ready for rapid feature development! 🚀
+
+# Full Accounting Cycle - Implementation Walkthrough
+This update completes the implementation of the **Full 10-Step Accounting Cycle** in the Nusa Journal application. The core addition is the **Automated Period Closing** workflow and the verification of **Reversing Entries**.
+
+## Features Implemented
+
+### 1. Automated Period Closing (Step 8: Closing Entries)
+**Goal:** Zero out Temporary Accounts (Revenue & Expense) and transfer the Net Income/Loss to Retained Earnings (Equity).
+
+**Workflow:**
+1.  Navigate to **Settings > Accounting Periods**.
+2.  Locate an `OPEN` period.
+3.  Click **"🔒 Tutup Buku"**.
+4.  The system calculates Net Income (Revenue - Expenses).
+5.  A **Closing Journal (JV...)** is automatically created:
+    *   **Debits** all Revenue accounts (to zero them).
+    *   **Credits** all Expense accounts (to zero them).
+    *   **Credits** Retained Earnings (if Profit) or **Debits** it (if Loss).
+6.  The Period status changes to `CLOSED`.
+
+**Technical Implementation:**
+*   **Service:** `ClosingService` handles the logic.
+*   **Constraint:** Users cannot post new journals to a `CLOSED` period.
+
+### 2. Journal Reversal (Step 10: Reversing Entries)
+**Goal:** Allow easy correction of accruals or errors by reversing a journal entry.
+
+**Workflow:**
+1.  Navigate to **Journals > Detail**.
+2.  Click **"Reverse Jurnal"** (Red button).
+3.  The system creates a new Journal:
+    *   Copies all lines but swaps **Debit** and **Credit**.
+    *   Marks the original journal as `Reversed`.
+    *   Links the two journals for audit trails.
+
+## Verification Steps performed
+
+### ✅ Period Closing
+1.  Created dummy Revenue and Expense transactions in an Open period.
+2.  Triggered "Close Period".
+3.  **Result:**
+    *   New Closing Journal created.
+    *   Revenue/Expense balances for that period became 0.
+    *   Retained Earnings increased by the Net Income amount.
+    *   Period marked as Closed.
+
+### ✅ Journal Reversal
+1.  Opened an existing Journal.
+2.  Clicked "Reverse".
+3.  **Result:**
+    *   New Reversal Journal created with opposite amounts.
+    *   Original Journal marked as "Reversed".
+    *   GL Impact effectively neutralized.

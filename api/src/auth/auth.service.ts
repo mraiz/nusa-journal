@@ -3,7 +3,9 @@ import {
   ConflictException,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
+import { PrismaClientManager } from '../tenancy/prisma-client-manager.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,42 +20,101 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private prismaClientManager: PrismaClientManager,
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { email, name, password } = registerDto;
+    const { email, name, password, companySlug } = registerDto;
 
     // Check if user already exists
-    const existingUser = await this.prisma.user.findUnique({
+    let user = await this.prisma.user.findUnique({
       where: { email },
     });
-
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
-    }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    });
+    if (user) {
+      // If user exists AND has a password, conflict.
+      // If user exists but NO password (phantom), we activate them.
+      if (user.password && user.password.length > 0) {
+        throw new ConflictException('User with this email already exists');
+      }
+
+      // Activate phantom user
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name,
+          password: hashedPassword,
+        },
+      });
+    } else {
+      // Create new user
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name,
+          password: hashedPassword,
+        },
+      });
+    }
+
+    // Handle Company Join logic if slug provided
+    if (companySlug) {
+      await this.handleCompanyJoin(user.id, email, companySlug);
+    }
 
     return {
       message: 'User registered successfully',
-      user,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
     };
+  }
+
+  private async handleCompanyJoin(userId: string, email: string, slug: string) {
+    try {
+      const tenantPrisma = await this.prismaClientManager.getClient(slug);
+      
+      const company = await tenantPrisma.company.findFirst();
+      if (!company) return; // Slug might be invalid, ignore silently or warn
+
+      // Check if membership exists (e.g. from Invite)
+      const existingMember = await tenantPrisma.companyUser.findUnique({
+         where: { userId_companyId: { userId, companyId: company.id } }
+      });
+
+      if (existingMember) {
+         // If already invited (PENDING), activate them
+         // Role is already set by invite
+         if (existingMember.status === 'PENDING') {
+            await tenantPrisma.companyUser.update({
+               where: { userId_companyId: { userId, companyId: company.id } },
+               data: { status: 'APPROVED' } // Auto-approve if they register with correct code? 
+               // Wait, requirements: "ketika email yang dia daftarkan sudah ada di list member yang statusnya pending invitation maka saat register nya berhasil... dia sudah punya company"
+               // "role nya adalah role yang diset admin saat menambahkan user"
+               // So yes, Auto-Approve invited users.
+            });
+         }
+      } else {
+         // Not invited, but user wants to join. 
+         // "kalau dia tidak ada di list member... status nya pending... admin assign role"
+         await tenantPrisma.companyUser.create({
+            data: {
+               userId,
+               companyId: company.id,
+               status: 'PENDING',
+               role: 'FINANCE' // Placeholder, Admin must set real role on approval
+            }
+         });
+      }
+    } catch (e) {
+      console.error('Failed to handle company join', e);
+      // Don't block registration if company join fails
+    }
   }
 
   async login(loginDto: LoginDto, response: Response) {

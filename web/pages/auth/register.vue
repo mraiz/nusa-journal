@@ -67,6 +67,22 @@
               :disabled="loading"
             />
           </div>
+          
+          <!-- Company Code (Slug) -->
+          <div>
+            <label for="companySlug" class="block text-sm font-medium text-neutral-700 mb-2">
+              Kode Perusahaan (Opsional)
+            </label>
+            <input
+              id="companySlug"
+              v-model="form.companySlug"
+              type="text"
+              class="input font-mono"
+              placeholder="e.g. nusa-journal-tbk"
+              :disabled="loading"
+            />
+            <p class="text-xs text-neutral-500 mt-1">Masukkan kode perusahaan jika Anda ingin langsung bergabung.</p>
+          </div>
 
           <!-- Password -->
           <div>
@@ -152,6 +168,7 @@ const form = ref({
   name: '',
   email: '',
   password: '',
+  companySlug: '',
 })
 
 const error = ref('')

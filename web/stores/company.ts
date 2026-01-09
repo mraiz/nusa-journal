@@ -99,6 +99,20 @@ export const useCompanyStore = defineStore('company', () => {
     }
   }
 
+  // Approve user
+  const approveUser = async (slug: string, userId: string, role: string) => {
+    loading.value = true
+    try {
+      await $api(`/${slug}/company/approve/${userId}`, {
+        method: 'POST',
+        body: { role }
+      })
+      await fetchCompanyUsers(slug)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     companies,
@@ -110,6 +124,7 @@ export const useCompanyStore = defineStore('company', () => {
     fetchCompanyUsers,
     inviteUser,
     removeUser,
-    updateUser
+    updateUser,
+    approveUser
   }
 })

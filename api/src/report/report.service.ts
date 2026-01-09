@@ -239,7 +239,7 @@ export class ReportService {
         accounts: assetAccounts.map(a => ({
           code: a.account.code,
           name: a.account.name,
-          classification: a.account.classification,
+          classification: (a.account as any).classification,
           amount: a.balance,
         })),
         total: totalAssets.toNumber(),

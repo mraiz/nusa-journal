@@ -315,7 +315,7 @@ export class CompanyService {
   /**
    * Approve user to join company
    */
-  async approveUser(tenantSlug: string, userId: string) {
+  async approveUser(tenantSlug: string, userId: string, role?: Role) {
     const tenantPrisma = await this.prismaClientManager.getClient(tenantSlug);
 
     const company = await tenantPrisma.company.findFirst();
@@ -330,14 +330,22 @@ export class CompanyService {
           companyId: company.id,
         },
       },
+      include: { user: true },
     });
 
     if (!companyUser) {
-      throw new NotFoundException('User invitation not found');
+      throw new NotFoundException('User not found in company');
     }
 
     if (companyUser.status === 'APPROVED') {
       throw new BadRequestException('User already approved');
+    }
+
+    const updateData: any = {
+       status: 'APPROVED',
+    }
+    if (role) {
+       updateData.role = role
     }
 
     // Approve user
@@ -348,9 +356,7 @@ export class CompanyService {
           companyId: company.id,
         },
       },
-      data: {
-        status: 'APPROVED',
-      },
+      data: updateData,
       include: {
         user: {
           select: {

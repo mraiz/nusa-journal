@@ -16,6 +16,7 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { UpdateCompanySettingsDto } from './dto/update-company-settings.dto';
 import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
+import { ApproveUserDto } from './dto/approve-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -103,8 +104,9 @@ export class CompanyController {
   async approveUser(
     @Param('tenantSlug') tenantSlug: string,
     @Param('userId') userId: string,
+    @Body(ValidationPipe) dto: ApproveUserDto,
   ) {
-    return this.companyService.approveUser(tenantSlug, userId);
+    return this.companyService.approveUser(tenantSlug, userId, dto.role);
   }
 
   /**

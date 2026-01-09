@@ -43,9 +43,13 @@
 - [x] Invite users to company (Admin only)
 - [x] Approve/reject user invitations (Admin only)
 - [x] Remove users from company (Admin only)
+- [x] Update user role (Admin only)
 - [x] List company users with roles and status
 - [x] Auto-generate slug from company name
 - [x] Update JWT payload with email and name
+- [x] Register with Company Code (Slug)
+- [x] Auto-approve invited users on register
+- [x] Approve/Reject PENDING users (Settings)
 
 ## Chart of Accounts (COA)
 - [x] CRUD endpoints for COA
@@ -89,13 +93,17 @@
 - [x] Sales (Invoice) module with auto-journal
 - [x] Purchase (Bill) module with auto-journal
 - [x] Payment & Receipt module
-- [x] Cash & Bank management
+    - [x] Create Payment (Direct, Linked to Invoice, Linked to Bill)
+    - [x] Support Cross-Linking (Vendor Refund, Customer Refund)
+    - [x] Edit/Delete Payment with Journal Reversal
+    - [x] Auto-fill Amount from Invoice/Bill
+- [ ] Cash & Bank management
 - [ ] Bank reconciliation
 
 ## Master Data
-- [x] Customer management (manual + Excel import)
-- [x] Vendor management (manual + Excel import)
-- [x] Product/Service management
+- [ ] Customer management (manual + Excel import)
+- [ ] Vendor management (manual + Excel import)
+- [ ] Product/Service management
 - [ ] Tax configuration (PPN, PPh)
 
 ## Currency & Exchange Rates
@@ -112,8 +120,8 @@
 - [x] Journal entry form with double-entry validation
 - [x] General Ledger views
 - [x] Financial reports with export options
-- [x] Transaction modules UI (Sales, Purchase, Payment)
-- [x] Master data management screens
+- [ ] Transaction modules UI (Sales, Purchase, Payment)
+- [ ] Master data management screens
 - [x] Fully responsive design for all devices
 - [x] Tailwind CSS with custom theming
 - [x] Pinia store for state management
@@ -121,8 +129,8 @@
 ## Integration & Advanced Features
 - [ ] HRIS integration (optional, read-only)
 - [ ] Audit trail viewer
-- [ ] Period closing workflow (Auto Closing Entries)
-- [/] Adjustment & closing journals (Manual Support Only)
+- [x] Period closing workflow (Auto Closing Entries)
+- [x] Adjustment & closing journals (Automated Closing Support)
 
 ## Testing & Validation
 - [ ] Test double-entry enforcement

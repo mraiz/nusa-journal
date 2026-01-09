@@ -53,7 +53,7 @@ export const usePeriodStore = defineStore('period', () => {
   const closePeriod = async (slug: string, id: string) => {
     loading.value = true
     try {
-      await $api(`/${slug}/periods/${id}/close`, { method: 'POST' })
+      await $api(`/${slug}/periods/${id}/close`, { method: 'PATCH' })
       await fetchPeriods(slug)
     } finally {
       loading.value = false
@@ -64,7 +64,7 @@ export const usePeriodStore = defineStore('period', () => {
   const reopenPeriod = async (slug: string, id: string) => {
     loading.value = true
     try {
-      await $api(`/${slug}/periods/${id}/reopen`, { method: 'POST' })
+      await $api(`/${slug}/periods/${id}/reopen`, { method: 'PATCH' })
       await fetchPeriods(slug)
     } finally {
       loading.value = false

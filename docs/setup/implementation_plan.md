@@ -617,3 +617,32 @@ Use the browser tool to validate:
 
 This is a **complex, mission-critical system**. Accounting errors are unacceptable. Every financial calculation must be verified against PSAK standards.
 
+
+### Backend
+1.  **[NEW] `ClosingService` (in `accounting-period` module)**
+    *   `closePeriod(periodId)`:
+        *   Validate period is open.
+        *   Calculate Net Income (Revenue - Expense).
+        *   Create Journal Entry:
+            *   Debit all Revenue accounts (to zero out).
+            *   Credit all Expense accounts (to zero out).
+            *   Credit/Debit difference to **Retained Earnings** (Equity).
+        *   Mark period as `CLOSED`.
+    *   `reopenPeriod(periodId)`:
+        *   Find and void the Closing Journal.
+        *   Mark period as `OPEN`.
+
+2.  **[MODIFY] `JournalService`**
+    *   Add `isReversal` flag to Journal.
+    *   Add `reverseJournal(journalId, date)`: Creates a new journal with swapped Debit/Credit.
+
+### Frontend
+1.  **[MODIFY] `pages/[companySlug]/settings.vue` (or Periods page)**
+    *   Add "Close Period" button.
+    *   Show summary of closing entry before confirmation.
+
+## Verification
+*   Create distinct Revenue and Expense transactions.
+*   Run "Close Period".
+*   Verify Revenue/Expense balances are 0 in the **next** period (Post-Closing Trial Balance).
+*   Verify Retained Earnings increased by Net Income.

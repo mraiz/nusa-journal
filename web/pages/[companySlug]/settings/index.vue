@@ -144,14 +144,29 @@
                 <span v-else class="text-red-500">{{ member.status }}</span>
               </td>
               <td class="px-6 py-4 text-right">
+              <td class="px-6 py-4 text-right">
                 <div v-if="isAdmin && member.email !== authStore.user?.email" class="flex justify-end gap-2">
-                  <button class="text-primary-600 hover:text-primary-800 text-sm font-medium" @click="handleEdit(member)">
-                     <PencilSquareIcon class="w-5 h-5" />
-                  </button>
-                  <button class="text-red-400 hover:text-red-600 text-sm font-medium" @click="confirmRemove(member)">
-                    <TrashIcon class="w-5 h-5" />
-                  </button>
+                  <!-- PENDING: Approve/Reject -->
+                  <template v-if="member.status === 'PENDING'">
+                      <button class="btn btn-sm btn-primary py-1 px-3 text-xs" @click="handleApprove(member)">
+                        Approve
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger py-1 px-3 text-xs" @click="confirmRemove(member)">
+                        Reject
+                      </button>
+                  </template>
+                  
+                  <!-- APPROVED/REJECTED: Edit/Delete -->
+                  <template v-else>
+                      <button class="text-primary-600 hover:text-primary-800 text-sm font-medium" @click="handleEdit(member)">
+                         <PencilSquareIcon class="w-5 h-5" />
+                      </button>
+                      <button class="text-red-400 hover:text-red-600 text-sm font-medium" @click="confirmRemove(member)">
+                        <TrashIcon class="w-5 h-5" />
+                      </button>
+                  </template>
                 </div>
+              </td>
               </td>
             </tr>
           </tbody>
@@ -216,6 +231,33 @@
             <button type="button" class="btn btn-secondary" @click="showEditModal = false">Batal</button>
             <button type="submit" class="btn btn-primary" :disabled="companyStore.loading">
               {{ companyStore.loading ? 'Menyimpan...' : 'Simpan Perubahan' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Approve User Modal -->
+    <div v-if="showApproveModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-scale-up">
+        <h3 class="text-xl font-bold text-neutral-800 mb-2">Setujui Anggota Baru</h3>
+        <p class="text-sm text-neutral-500 mb-6">Pilih peran untuk <strong>{{ approveForm.name }}</strong> agar dapat mengakses perusahaan.</p>
+        
+        <form @submit.prevent="submitApprove" class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-xs font-semibold text-neutral-500 uppercase">Peran (Role)</label>
+            <select v-model="approveForm.role" class="input py-2">
+              <option value="FINANCE">Finance (Staff Keuangan)</option>
+              <option value="ACCOUNTANT">Accountant (Akuntan)</option>
+              <option value="AUDITOR">Auditor (Read Only)</option>
+              <option value="ADMIN">Admin (Full Access)</option>
+            </select>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="button" class="btn btn-secondary" @click="showApproveModal = false">Batal</button>
+            <button type="submit" class="btn btn-primary" :disabled="companyStore.loading">
+              {{ companyStore.loading ? 'Memproses...' : 'Setujui Anggota' }}
             </button>
           </div>
         </form>
@@ -359,6 +401,32 @@ const submitEdit = async () => {
   } catch (e: any) {
     alert('Gagal update role: ' + e.message)
   }
+}
+
+// Approve User Logic
+const showApproveModal = ref(false)
+const approveForm = reactive({
+  userId: '',
+  name: '',
+  role: 'FINANCE'
+})
+
+const handleApprove = (member: any) => {
+  approveForm.userId = member.userId
+  approveForm.name = member.name
+  approveForm.role = 'FINANCE' // Default
+  showApproveModal.value = true
+}
+
+const submitApprove = async () => {
+   if (!companyStore.currentCompany) return
+   try {
+      await companyStore.approveUser(companyStore.currentCompany.slug, approveForm.userId, approveForm.role)
+      alert('User berhasil disetujui dan aktif!')
+      showApproveModal.value = false
+   } catch (e: any) {
+      alert('Gagal menyetujui user: ' + e.message)
+   }
 }
 
 // Remove
