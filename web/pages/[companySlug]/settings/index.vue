@@ -19,6 +19,13 @@
       </button>
       <button 
         class="px-6 py-3 text-sm font-medium border-b-2 transition-colors"
+        :class="activeTab === 'accounts' ? 'border-primary-500 text-primary-700' : 'border-transparent text-neutral-500 hover:text-neutral-700'"
+        @click="activeTab = 'accounts'"
+      >
+        📊 Akun
+      </button>
+      <button 
+        class="px-6 py-3 text-sm font-medium border-b-2 transition-colors"
         :class="activeTab === 'team' ? 'border-primary-500 text-primary-700' : 'border-transparent text-neutral-500 hover:text-neutral-700'"
         @click="activeTab = 'team'"
       >
@@ -52,6 +59,51 @@
       </div>
     </div>
 
+    <!-- Accounts Tab -->
+    <div v-else-if="activeTab === 'accounts'" class="glass-card p-8 animate-fade-in max-w-2xl">
+      <h3 class="text-lg font-bold text-neutral-800 mb-2 border-b border-neutral-100 pb-2">Mapping Akun</h3>
+      <p class="text-sm text-neutral-500 mb-6">Konfigurasi akun default untuk pembuatan jurnal otomatis saat posting invoice dan bill.</p>
+      
+      <div v-if="accountsLoading" class="text-center py-8">
+        <div class="animate-spin w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
+      </div>
+      
+      <form v-else @submit.prevent="saveAccountSettings" class="space-y-4">
+        <div class="space-y-1">
+          <label class="text-xs font-semibold text-neutral-500 uppercase">
+            Piutang Usaha (Accounts Receivable) <span class="text-red-500">*</span>
+          </label>
+          <select v-model="accountSettings.accountsReceivableId" class="input py-2">
+            <option value="">Pilih Akun AR...</option>
+            <option v-for="acc in assetAccounts" :key="acc.id" :value="acc.id">
+              {{ acc.code }} - {{ acc.name }}
+            </option>
+          </select>
+          <p class="text-xs text-neutral-400 mt-1">Digunakan saat posting invoice penjualan (Debit AR)</p>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs font-semibold text-neutral-500 uppercase">
+            Hutang Usaha (Accounts Payable) <span class="text-red-500">*</span>
+          </label>
+          <select v-model="accountSettings.accountsPayableId" class="input py-2">
+            <option value="">Pilih Akun AP...</option>
+            <option v-for="acc in liabilityAccounts" :key="acc.id" :value="acc.id">
+              {{ acc.code }} - {{ acc.name }}
+            </option>
+          </select>
+          <p class="text-xs text-neutral-400 mt-1">Digunakan saat posting bill pembelian (Credit AP)</p>
+        </div>
+
+        <div class="pt-4">
+          <button type="submit" :disabled="savingAccounts" class="btn btn-primary">
+            <span v-if="savingAccounts" class="animate-spin mr-2">...</span>
+            Simpan Pengaturan
+          </button>
+        </div>
+      </form>
+    </div>
+
     <!-- Team Tab -->
     <div v-else-if="activeTab === 'team'" class="animate-fade-in space-y-6">
       <div class="flex justify-between items-center">
@@ -60,7 +112,7 @@
            <p class="text-sm text-neutral-500">Kelola akses user ke perusahaan ini</p>
         </div>
         <button class="btn btn-primary" @click="showInviteModal = true">
-          {{ isAdmin ? '+ Tambah Anggota' : '+ Undang Teman' }}
+          {{ isAdmin ? '+ Tambah Anggota' : '+ Undang Anggota' }}
         </button>
       </div>
 
@@ -106,7 +158,7 @@
     <div v-if="showInviteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-fade-in">
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-scale-up">
         <h3 class="text-xl font-bold text-neutral-800 mb-2">
-          {{ isAdmin ? 'Tambah Anggota Baru' : 'Undang Teman' }}
+          {{ isAdmin ? 'Tambah Anggota Baru' : 'Undang Anggota Baru' }}
         </h3>
         <p class="text-sm text-neutral-500 mb-6">
           {{ isAdmin ? 'Masukkan email user yang sudah terdaftar. User akan langsung aktif.' : 'Undangan akan dikirim ke email tujuan untuk konfirmasi.' }}
@@ -143,8 +195,14 @@
 
 <script setup lang="ts">
 import { useCompanyStore } from '~/stores/company';
+import { useAccountStore } from '~/stores/account';
+import { useAuthStore } from '~/stores/auth';
 
+const route = useRoute()
 const companyStore = useCompanyStore()
+const accountStore = useAccountStore()
+const authStore = useAuthStore()
+
 const activeTab = ref('general')
 const showInviteModal = ref(false)
 const inviteForm = reactive({
@@ -152,15 +210,63 @@ const inviteForm = reactive({
   role: 'FINANCE'
 })
 
+// Accounts Tab State
+const accountsLoading = ref(false)
+const savingAccounts = ref(false)
+const allAccounts = ref<any[]>([])
+const accountSettings = reactive({
+  accountsReceivableId: '',
+  accountsPayableId: ''
+})
+
+const assetAccounts = computed(() => allAccounts.value.filter(a => a.type === 'ASSET' && a.isPosting))
+const liabilityAccounts = computed(() => allAccounts.value.filter(a => a.type === 'LIABILITY' && a.isPosting))
+
 const isAdmin = computed(() => {
   return companyStore.currentCompany?.role === 'ADMIN'
 })
 
-onMounted(() => {
+onMounted(async () => {
   if (companyStore.currentCompany) {
     companyStore.fetchCompanyUsers(companyStore.currentCompany.slug)
+    
+    // Fetch accounts for settings tab
+    accountsLoading.value = true
+    try {
+      const accRes = await accountStore.fetchAccounts(companyStore.currentCompany.slug, { limit: 500 })
+      if (accRes.data) {
+        allAccounts.value = accRes.data
+      } else if (Array.isArray(accRes)) {
+        allAccounts.value = accRes
+      }
+      
+      // Also fetch current company settings
+      const companyData = await authStore.fetchWithAuth(`/${route.params.companySlug}/company`)
+      accountSettings.accountsReceivableId = companyData.accountsReceivableId || ''
+      accountSettings.accountsPayableId = companyData.accountsPayableId || ''
+    } catch (err) {
+      console.error('Failed to fetch accounts', err)
+    } finally {
+      accountsLoading.value = false
+    }
   }
 })
+
+// Save Account Settings
+const saveAccountSettings = async () => {
+  savingAccounts.value = true
+  try {
+    await authStore.fetchWithAuth(`/${route.params.companySlug}/company/settings`, {
+      method: 'PATCH',
+      body: accountSettings
+    })
+    alert('Pengaturan akun berhasil disimpan!')
+  } catch (err: any) {
+    alert(err.message || 'Gagal menyimpan pengaturan')
+  } finally {
+    savingAccounts.value = false
+  }
+}
 
 // Invite
 const submitInvite = async () => {

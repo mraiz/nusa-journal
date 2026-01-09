@@ -101,4 +101,21 @@ export class TenantPrismaService {
   get auditLog() {
     return this.prisma.auditLog;
   }
+  async checkCompany() {
+    const company = await this.prisma.company.findFirst({
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        baseCurrency: true,
+        accountsReceivableId: true,
+        accountsPayableId: true,
+      }
+    });
+    if (!company) {
+      throw new Error('Company configuration not found in this tenant database.');
+    }
+    return company;
+  }
 }
+

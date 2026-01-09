@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Delete,
   Body,
   Param,
@@ -13,6 +14,7 @@ import {
 import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
+import { UpdateCompanySettingsDto } from './dto/update-company-settings.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -56,6 +58,19 @@ export class CompanyController {
   @UseGuards(JwtAuthGuard)
   async getCompany(@Param('tenantSlug') tenantSlug: string) {
     return this.companyService.getCompany(tenantSlug);
+  }
+
+  /**
+   * Update company settings (AR/AP accounts)
+   */
+  @Patch(':tenantSlug/company/settings')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async updateCompanySettings(
+    @Param('tenantSlug') tenantSlug: string,
+    @Body(ValidationPipe) dto: UpdateCompanySettingsDto,
+  ) {
+    return this.companyService.updateCompanySettings(tenantSlug, dto);
   }
 
   /**

@@ -363,6 +363,46 @@ export class AccountService {
   }
 
   /**
+   * Delete account (only if not used in journals)
+   */
+  async deleteAccount(id: string) {
+    const account = await this.tenantPrisma.account.findUnique({
+      where: { id },
+      include: {
+        journalLines: { take: 1 },
+        children: { take: 1 },
+      },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    // Check if account has journal entries
+    if (account.journalLines && account.journalLines.length > 0) {
+      throw new BadRequestException('Cannot delete account with journal entries. Consider locking it instead.');
+    }
+
+    // Check if account has children
+    if (account.children && account.children.length > 0) {
+      throw new BadRequestException('Cannot delete account with child accounts. Delete children first.');
+    }
+
+    await this.tenantPrisma.account.delete({
+      where: { id },
+    });
+
+    this.logger.log(`Account deleted: ${account.code} - ${account.name}`);
+
+    return {
+      id: account.id,
+      code: account.code,
+      name: account.name,
+      message: 'Account deleted successfully',
+    };
+  }
+
+  /**
    * Get account hierarchy tree (for UI display)
    */
   async getAccountTree(type?: AccountType) {

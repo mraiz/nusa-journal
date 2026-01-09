@@ -18,9 +18,9 @@ export class JournalService {
   /**
    * Create journal with double-entry validation
    */
-  async createJournal(dto: CreateJournalDto, user: { id: string; email: string }) {
+  async createJournal(dto: CreateJournalDto, user: { userId: string; email: string }) {
     // Resolve user ID (handle mismatch between Registry and Tenant IDs)
-    let userId = user.id;
+    let userId = user.userId;
     const existingUser = await this.tenantPrisma.user.findUnique({ where: { id: userId } });
     
     if (!existingUser) {
@@ -383,9 +383,9 @@ export class JournalService {
   /**
    * Reverse journal (create reversing entry)
    */
-  async reverseJournal(id: string, user: { id: string; email: string }) {
+  async reverseJournal(id: string, user: { userId: string; email: string }) {
     // Resolve user ID
-    let userId = user.id;
+    let userId = user.userId;
     const existingUser = await this.tenantPrisma.user.findUnique({ where: { id: userId } });
     if (!existingUser && user.email) {
       const byEmail = await this.tenantPrisma.user.findUnique({ where: { email: user.email } });

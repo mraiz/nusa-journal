@@ -11,6 +11,12 @@ import { JournalModule } from './journal/journal.module';
 import { PeriodModule } from './period/period.module';
 import { LedgerModule } from './ledger/ledger.module';
 import { ReportModule } from './report/report.module';
+import { ProductModule } from './product/product.module';
+import { CustomerModule } from './customer/customer.module';
+import { VendorModule } from './vendor/vendor.module';
+import { SalesModule } from './sales/sales.module';
+import { PurchaseModule } from './purchase/purchase.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -23,6 +29,12 @@ import { ReportModule } from './report/report.module';
     PeriodModule,
     LedgerModule,
     ReportModule,
+    ProductModule,
+    CustomerModule,
+    VendorModule,
+    SalesModule,
+    PurchaseModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

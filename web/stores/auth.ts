@@ -76,5 +76,12 @@ export const useAuthStore = defineStore('auth', {
         // Silent fail is okay, just means not logged in
       }
     },
+
+    async fetchWithAuth(url: string, options: any = {}) {
+        const { $api } = useNuxtApp()
+        // $api is already configured with interceptors for token/cookie handling in Nuxt plugins
+        return $api(url, options)
+    },
   },
+
 })

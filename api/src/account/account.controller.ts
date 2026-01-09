@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -93,5 +94,16 @@ export class AccountController {
   @HttpCode(HttpStatus.OK)
   async unlockAccount(@Param('id') id: string) {
     return this.accountService.unlockAccount(id);
+  }
+
+  /**
+   * Delete account (Admin only)
+   */
+  @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN')
+  @HttpCode(HttpStatus.OK)
+  async deleteAccount(@Param('id') id: string) {
+    return this.accountService.deleteAccount(id);
   }
 }

@@ -86,16 +86,16 @@
 - [x] Financial Summary (dashboard metrics)
 
 ## Transaction Modules
-- [ ] Sales (Invoice) module with auto-journal
-- [ ] Purchase (Bill) module with auto-journal
-- [ ] Payment & Receipt module
-- [ ] Cash & Bank management
+- [x] Sales (Invoice) module with auto-journal
+- [x] Purchase (Bill) module with auto-journal
+- [x] Payment & Receipt module
+- [x] Cash & Bank management
 - [ ] Bank reconciliation
 
 ## Master Data
-- [ ] Customer management (manual + Excel import)
-- [ ] Vendor management (manual + Excel import)
-- [ ] Product/Service management
+- [x] Customer management (manual + Excel import)
+- [x] Vendor management (manual + Excel import)
+- [x] Product/Service management
 - [ ] Tax configuration (PPN, PPh)
 
 ## Currency & Exchange Rates
@@ -112,8 +112,8 @@
 - [x] Journal entry form with double-entry validation
 - [x] General Ledger views
 - [x] Financial reports with export options
-- [ ] Transaction modules UI (Sales, Purchase, Payment)
-- [ ] Master data management screens
+- [x] Transaction modules UI (Sales, Purchase, Payment)
+- [x] Master data management screens
 - [x] Fully responsive design for all devices
 - [x] Tailwind CSS with custom theming
 - [x] Pinia store for state management

@@ -1,8 +1,11 @@
 <template>
   <div>
-    <NuxtPage />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
   </div>
 </template>
+
 
 <script setup>
 // Enable smooth page transitions

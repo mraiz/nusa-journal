@@ -33,7 +33,7 @@ export class JournalController {
     @Body(ValidationPipe) dto: CreateJournalDto,
     @CurrentUser() user: any,
   ) {
-    return this.journalService.createJournal(dto, { id: user.userId, email: user.email });
+    return this.journalService.createJournal(dto, { userId: user.userId, email: user.email });
   }
 
   /**
@@ -63,6 +63,6 @@ export class JournalController {
     @Param('id') id: string,
     @CurrentUser() user: any,
   ) {
-    return this.journalService.reverseJournal(id, { id: user.userId, email: user.email });
+    return this.journalService.reverseJournal(id, { userId: user.userId, email: user.email });
   }
 }

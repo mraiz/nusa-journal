@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-slate-50 flex">
     <!-- Sidebar -->
     <aside 
-      class="fixed inset-y-0 left-0 w-64 bg-white/80 backdrop-blur-xl border-r border-neutral-200 z-30 transition-transform duration-300 lg:translate-x-0"
+      class="fixed inset-y-0 left-0 w-64 bg-white/80 backdrop-blur-xl border-r border-neutral-200 z-30 transition-transform duration-300 lg:translate-x-0 print:hidden"
       :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
       <!-- Logo -->
@@ -34,7 +34,7 @@
       </div>
 
       <!-- Navigation -->
-      <nav class="p-4 space-y-1 overflow-y-auto h-[calc(100vh-180px)]">
+      <nav class="p-4 space-y-1 overflow-y-auto h-[calc(100vh-180px)] pb-[60px]">
         <div v-for="(group, index) in menuGroups" :key="index" class="mb-6">
           <h3 class="px-3 text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">
             {{ group.title }}
@@ -83,7 +83,7 @@
     ></div>
 
     <!-- Main Content -->
-    <main class="flex-1 lg:ml-64 min-h-screen transition-all duration-300">
+    <main class="flex-1 lg:ml-64 min-h-screen transition-all duration-300 print:ml-0">
       <!-- Topbar -->
       <header class="h-16 px-8 flex items-center justify-between bg-white/50 backdrop-blur-sm border-b border-neutral-200 lg:hidden sticky top-0 z-20">
         <button @click="isSidebarOpen = true" class="text-neutral-500 hover:text-neutral-800">
@@ -139,6 +139,21 @@ const menuGroups = [
     ]
   },
   {
+      title: 'Transactions',
+      items: [
+          { name: 'Sales', path: '/sales', icon: '💰' },
+          { name: 'Purchases', path: '/purchase', icon: '🛍️' },
+          { name: 'Payments', path: '/payments', icon: '💳' },
+      ]
+  },
+  {
+      title: 'Master Data',
+      items: [
+          { name: 'Contacts', path: '/contacts', icon: '👥' },
+          { name: 'Products', path: '/products', icon: '📦' },
+      ]
+  },
+  {
     title: 'Accounting',
     items: [
       { name: 'Journals', path: '/journals', icon: '📓' },
@@ -154,6 +169,7 @@ const menuGroups = [
     ]
   }
 ]
+
 
 // Fetch company details if not present (e.g. on direct navigation)
 onMounted(async () => {

@@ -164,13 +164,46 @@ export class CompanyService {
   async getCompany(tenantSlug: string) {
     const tenantPrisma = await this.prismaClientManager.getClient(tenantSlug);
 
-    const company = await tenantPrisma.company.findFirst();
+    const company = await tenantPrisma.company.findFirst({
+      include: {
+        accountsReceivable: { select: { id: true, code: true, name: true } },
+        accountsPayable: { select: { id: true, code: true, name: true } },
+      }
+    });
 
     if (!company) {
       throw new NotFoundException('Company not found');
     }
 
     return company;
+  }
+
+  /**
+   * Update company settings (AR/AP accounts)
+   */
+  async updateCompanySettings(tenantSlug: string, dto: { accountsReceivableId?: string; accountsPayableId?: string }) {
+    const tenantPrisma = await this.prismaClientManager.getClient(tenantSlug);
+
+    const company = await tenantPrisma.company.findFirst();
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    const updated = await tenantPrisma.company.update({
+      where: { id: company.id },
+      data: {
+        accountsReceivableId: dto.accountsReceivableId || null,
+        accountsPayableId: dto.accountsPayableId || null,
+      },
+      include: {
+        accountsReceivable: { select: { id: true, code: true, name: true } },
+        accountsPayable: { select: { id: true, code: true, name: true } },
+      }
+    });
+
+    this.logger.log(`Company settings updated for ${tenantSlug}`);
+
+    return updated;
   }
 
   /**

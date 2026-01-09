@@ -42,9 +42,15 @@ model Company {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   
+  // Account Settings for Auto-Journal
+  accountsReceivableId String?
+  accountsPayableId    String?
+
   // Relations
   companyUsers        CompanyUser[]
   accounts            Account[]
+  accountsReceivable  Account?  @relation("CompanyAR", fields: [accountsReceivableId], references: [id])
+  accountsPayable     Account?  @relation("CompanyAP", fields: [accountsPayableId], references: [id])
   accountingPeriods   AccountingPeriod[]
   journals            Journal[]
   exchangeRates       ExchangeRate[]
@@ -115,6 +121,13 @@ model Account {
   children        Account[]   @relation("AccountHierarchy")
   journalLines    JournalLine[]
   
+  // Inverse relations for settings
+  companyAR        Company[] @relation("CompanyAR")
+  companyAP        Company[] @relation("CompanyAP")
+  productSales     Product[] @relation("ProductSalesAccount")
+  productPurchases Product[] @relation("ProductPurchaseAccount")
+  taxAccounts      Tax[]     @relation("TaxAccount")
+  
   @@unique([companyId, code])
   @@index([companyId, type])
   @@map("accounts")
@@ -180,6 +193,7 @@ model Journal {
   journalLines    JournalLine[]
   reversedBy      Journal?    @relation("JournalReversal", fields: [reversedById], references: [id])
   reversingJournal Journal?   @relation("JournalReversal")
+  payment         Payment?
   
   @@unique([companyId, journalNumber])
   @@index([companyId, date])
@@ -279,11 +293,18 @@ model Product {
   type          ProductType @default(SERVICE)
   price         Decimal   @db.Decimal(15, 2)
   isActive      Boolean   @default(true)
+  
+  // Account Mapping
+  salesAccountId    String?
+  purchaseAccountId String?
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
   // Relations
   company       Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  salesAccount  Account?  @relation("ProductSalesAccount", fields: [salesAccountId], references: [id])
+  purchaseAccount Account? @relation("ProductPurchaseAccount", fields: [purchaseAccountId], references: [id])
   salesInvoiceLines SalesInvoiceLine[]
   purchaseBillLines PurchaseBillLine[]
   
@@ -304,6 +325,9 @@ model Tax {
   type          TaxType
   rate          Decimal   @db.Decimal(5, 2) // Percentage
   accountId     String?   // Tax account in COA
+  
+  account       Account?  @relation("TaxAccount", fields: [accountId], references: [id])
+  
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -345,6 +369,7 @@ model SalesInvoice {
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer        Customer  @relation(fields: [customerId], references: [id])
   lines           SalesInvoiceLine[]
+  payments        Payment[]
   
   @@unique([companyId, invoiceNumber])
   @@map("sales_invoices")
@@ -393,6 +418,7 @@ model PurchaseBill {
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   vendor          Vendor    @relation(fields: [vendorId], references: [id])
   lines           PurchaseBillLine[]
+  payments        Payment[]
   
   @@unique([companyId, billNumber])
   @@map("purchase_bills")
@@ -436,7 +462,13 @@ model Payment {
   
   // Relations
   company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  journal         Journal?  @relation(fields: [journalId], references: [id])
   
+  salesInvoice    SalesInvoice? @relation(fields: [salesInvoiceId], references: [id])
+  salesInvoiceId  String?
+  purchaseBill    PurchaseBill? @relation(fields: [purchaseBillId], references: [id])
+  purchaseBillId  String?
+
   @@unique([companyId, paymentNumber])
   @@map("payments")
 }

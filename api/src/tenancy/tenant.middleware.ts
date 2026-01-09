@@ -44,7 +44,9 @@ export class TenantMiddleware implements NestMiddleware {
       if (error instanceof NotFoundException) {
         throw new NotFoundException(`Tenant '${tenantSlug}' not found or inactive`);
       }
-      throw error;
+      console.error(`[TenantMiddleware] Error processing tenant '${tenantSlug}':`, error);
+      // DEBUG: Return actual error to client
+      throw new BadRequestException(`Tenant Middleware Error: ${(error as any).message || error}`);
     }
   }
 }
