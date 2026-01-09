@@ -290,7 +290,7 @@ const contraAccounts = computed(() => {
 
 // Pagination & Search State
 const page = ref(1)
-const limit = ref(50)
+const limit = ref(10)
 const search = ref('')
 const total = ref(0) 
 
@@ -342,8 +342,8 @@ const handleEdit = async (item: any) => {
     // Extract Payment Account from Journal Lines
     // For Receipt: Debit = Bank (Account ID)
     // For Payment: Credit = Bank (Account ID)
-    if (item.journal?.lines) {
-        const bankLine = item.journal.lines.find((l: any) => 
+    if (item.journal?.journalLines) {
+        const bankLine = item.journal.journalLines.find((l: any) => 
             (item.type === 'RECEIPT' && Number(l.debit) > 0 && Number(l.credit) === 0) ||
             (item.type === 'PAYMENT' && Number(l.credit) > 0 && Number(l.debit) === 0)
         );
@@ -374,8 +374,8 @@ const handleEdit = async (item: any) => {
     } else {
         form.allocationMode = 'DIRECT'
         // Extract Contra Account
-         if (item.journal?.lines) {
-            const contraLine = item.journal.lines.find((l: any) => l.accountId !== form.paymentAccountId);
+         if (item.journal?.journalLines) {
+            const contraLine = item.journal.journalLines.find((l: any) => l.accountId !== form.paymentAccountId);
             if (contraLine) form.contraAccountId = contraLine.accountId;
         }
     }
@@ -392,8 +392,8 @@ const handleEdit = async (item: any) => {
         form.amount = Number(item.amount)
     } else {
         // Direct
-         if (item.journal?.lines) {
-            const contraLine = item.journal.lines.find((l: any) => l.accountId !== form.paymentAccountId);
+         if (item.journal?.journalLines) {
+            const contraLine = item.journal.journalLines.find((l: any) => l.accountId !== form.paymentAccountId);
             if (contraLine) form.contraAccountId = contraLine.accountId;
         }
         form.amount = Number(item.amount)

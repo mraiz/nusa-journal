@@ -115,7 +115,7 @@ const loading = computed(() => purchaseStore.loading)
 
 // Pagination & Search State
 const page = ref(1)
-const limit = ref(50)
+const limit = ref(10)
 const search = ref('')
 const total = ref(0) 
 

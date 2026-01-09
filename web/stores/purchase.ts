@@ -15,9 +15,9 @@ export const usePurchaseStore = defineStore('purchase', () => {
         loading.value = true
         error.value = null
         try {
-            const { data } = await authStore.fetchWithAuth(`/${route.params.companySlug}/purchase/bills`, { query: params })
-            bills.value = data
-            return data
+            const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/purchase/bills`, { query: params })
+            bills.value = response.data
+            return response
         } catch (err: any) {
             error.value = err.message
             throw err

@@ -15,9 +15,9 @@ export const useSalesStore = defineStore('sales', () => {
         loading.value = true
         error.value = null
         try {
-            const { data } = await authStore.fetchWithAuth(`/${route.params.companySlug}/sales/invoices`, { query: params })
-            invoices.value = data
-            return data
+            const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/sales/invoices`, { query: params })
+            invoices.value = response.data
+            return response
         } catch (err: any) {
             error.value = err.message
             throw err
@@ -100,7 +100,7 @@ export const useSalesStore = defineStore('sales', () => {
 
     async function fetchUnpaidInvoices() {
         // Fetch POSTED and PARTIAL invoices
-        return fetchInvoices({ status: 'POSTED', limit: 100 })
+        return fetchInvoices({ status: 'PAID', limit: 100 })
     }
 
     return {

@@ -157,7 +157,7 @@
                 <span class="font-semibold text-neutral-600 text-xs">Chart of Accounts</span>
               </NuxtLink>
 
-              <NuxtLink :to="`/${slug}/settings/users`" 
+              <NuxtLink :to="`/${slug}/settings`" 
                 class="p-4 rounded-2xl border border-neutral-100 bg-white hover:border-primary-200 hover:shadow-soft-lg hover:-translate-y-1 transition-all duration-300 group text-center flex flex-col items-center justify-center gap-2">
                 <span class="text-2xl group-hover:scale-110 transition-transform duration-300 bg-neutral-50 p-2 rounded-full">👥</span>
                 <span class="font-semibold text-neutral-600 text-xs">User & Akses</span>

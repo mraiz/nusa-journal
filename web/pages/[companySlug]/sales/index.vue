@@ -116,7 +116,7 @@ const loading = computed(() => salesStore.loading)
 
 // Pagination & Search State
 const page = ref(1)
-const limit = ref(50)
+const limit = ref(10)
 const search = ref('')
 const total = ref(0) // Need to get total from store response
 
@@ -127,6 +127,7 @@ const fetchData = async () => {
         search: search.value
     })
     if (data) {
+        console.log("datadatadata", data)
         total.value = data.total
     }
 }
