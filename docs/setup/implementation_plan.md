@@ -5,6 +5,7 @@
 Implement **Nusa Journal**, a comprehensive accounting system designed for UMKM, Startup, Corporate, and internal company needs. The system is built with an **accounting-first** approach, following **PSAK (Indonesia)** standards, with auditability and data integrity as top priorities.
 
 **Core Principles:**
+
 - All transactions start from the general journal
 - Mandatory double-entry (Debit = Credit)
 - Multi-company by design
@@ -16,20 +17,17 @@ Implement **Nusa Journal**, a comprehensive accounting system designed for UMKM,
 
 ## User Review Required
 
-> [!IMPORTANT]
-> **Multi-Company Architecture**
+> [!IMPORTANT] > **Multi-Company Architecture**
 > The system uses URL slugs for company context (e.g., `/pt-media-antar-nusa/...`). Each user can have different roles in different companies. Please confirm this approach aligns with your infrastructure and routing strategy.
 
-> [!WARNING]
-> **Journal Immutability**
+> [!WARNING] > **Journal Immutability**
 > Journals are immutable - no direct edits or deletions allowed. Corrections must be made via **Reverse Journal**. This is strict accounting best practice but may feel restrictive to users. UI messaging must clearly communicate this workflow.
 
-> [!IMPORTANT]
-> **Period Lock Enforcement**
+> [!IMPORTANT] > **Period Lock Enforcement**
 > Once an accounting period is closed, no new journals can be posted to that period. This is enforced at the database level. Ensure business processes align with this constraint.
 
-> [!WARNING]
-> **Technology Stack Confirmation**
+> [!WARNING] > **Technology Stack Confirmation**
+>
 > - Backend: NestJS + TypeScript + Prisma + PostgreSQL
 > - Frontend: Nuxt 4 + TypeScript + Tailwind CSS + Pinia
 > - Node.js version requirement: Please confirm which version to use (LTS recommended)
@@ -43,6 +41,7 @@ Implement **Nusa Journal**, a comprehensive accounting system designed for UMKM,
 #### Setup & Configuration
 
 ##### [NEW] Project Structure
+
 ```
 /Users/mraiz_/Documents/journal/
 ├── api/          # NestJS backend
@@ -51,12 +50,14 @@ Implement **Nusa Journal**, a comprehensive accounting system designed for UMKM,
 ```
 
 ##### [NEW] Backend Configuration Files
+
 - [package.json](file:///Users/mraiz_/Documents/journal/api/package.json) - NestJS dependencies
 - [tsconfig.json](file:///Users/mraiz_/Documents/journal/api/tsconfig.json) - TypeScript strict mode
 - [.env.example](file:///Users/mraiz_/Documents/journal/api/.env.example) - Environment variables template
 - [prisma/schema.prisma](file:///Users/mraiz_/Documents/journal/api/prisma/schema.prisma) - Database schema
 
 ##### [NEW] Frontend Configuration Files
+
 - [package.json](file:///Users/mraiz_/Documents/journal/web/package.json) - Nuxt 4 dependencies
 - [nuxt.config.ts](file:///Users/mraiz_/Documents/journal/web/nuxt.config.ts) - Nuxt configuration
 - [tailwind.config.ts](file:///Users/mraiz_/Documents/journal/web/tailwind.config.ts) - Tailwind theming
@@ -71,6 +72,7 @@ Implement **Nusa Journal**, a comprehensive accounting system designed for UMKM,
 ##### [NEW] [schema.prisma](file:///Users/mraiz_/Documents/journal/api/prisma/schema.prisma)
 
 Core tables to implement:
+
 - `User` - User accounts with hashed passwords and refresh tokens
 - `Company` - Multi-tenant company entities with slugs
 - `CompanyUser` - Many-to-many with roles per company
@@ -83,6 +85,7 @@ Core tables to implement:
 - `Customer`, `Vendor`, `Product`, `Tax` - Master data
 
 **Key Constraints:**
+
 - Foreign keys enforced
 - Check constraint: `SUM(journal_lines.debit) = SUM(journal_lines.credit)` per journal
 - Unique constraint on company slug
@@ -93,29 +96,34 @@ Core tables to implement:
 #### Authentication Module
 
 ##### [NEW] [auth.module.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/auth.module.ts)
+
 - JWT strategy with HTTP-only cookies
 - Access token: 7 days expiration
 - Refresh token: 30 days expiration
 - Token payload: `sub` (user_id), `company`, `roles[]`
 
 ##### [NEW] [auth.service.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/auth.service.ts)
+
 - Register user
 - Login with JWT generation
 - Refresh token rotation
 - Logout (clear cookies + invalidate refresh token)
 
 ##### [NEW] [auth.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/auth.controller.ts)
+
 - POST `/auth/register`
 - POST `/auth/login`
 - POST `/auth/refresh`
 - POST `/auth/logout`
 
 ##### [NEW] [jwt-auth.guard.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/guards/jwt-auth.guard.ts)
+
 - Extract JWT from HTTP-only cookie
 - Validate token
 - Attach user + company + roles to request
 
 ##### [NEW] [roles.decorator.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/decorators/roles.decorator.ts)
+
 - Custom decorator for ACL enforcement
 
 ---
@@ -127,12 +135,14 @@ Core tables to implement:
 ##### [NEW] [company.module.ts](file:///Users/mraiz_/Documents/journal/api/src/company/company.module.ts)
 
 ##### [NEW] [company.service.ts](file:///Users/mraiz_/Documents/journal/api/src/company/company.service.ts)
+
 - Create company (auto-assign creator as Admin)
 - Join company request (pending approval)
 - Approve user join
 - Assign/remove roles per company
 
 ##### [NEW] [company.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/company/company.controller.ts)
+
 - POST `/companies`
 - POST `/companies/join`
 - POST `/companies/:slug/approve-user`
@@ -145,12 +155,14 @@ Core tables to implement:
 ##### [NEW] [account.module.ts](file:///Users/mraiz_/Documents/journal/api/src/account/account.module.ts)
 
 ##### [NEW] [account.service.ts](file:///Users/mraiz_/Documents/journal/api/src/account/account.service.ts)
+
 - Create account (PSAK validation: Asset, Liability, Equity, Revenue, Expense)
 - Multi-level hierarchy (e.g., 1000 → 1100 → 1110)
 - Lock account (prevent edits)
 - Validate account before journal posting
 
 ##### [NEW] [account.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/account/account.controller.ts)
+
 - POST `/companies/:slug/accounts`
 - GET `/companies/:slug/accounts`
 - PATCH `/companies/:slug/accounts/:id/lock`
@@ -162,6 +174,7 @@ Core tables to implement:
 ##### [NEW] [journal.module.ts](file:///Users/mraiz_/Documents/journal/api/src/journal/journal.module.ts)
 
 ##### [NEW] [journal.service.ts](file:///Users/mraiz_/Documents/journal/api/src/journal/journal.service.ts)
+
 - **Create Journal**: Validate double-entry (Debit = Credit)
 - Check period is open
 - Validate accounts exist and are not locked
@@ -172,13 +185,16 @@ Core tables to implement:
 - List journals with filters (date, period, account)
 
 **Validation Rules:**
+
 ```typescript
 const totalDebit = journalLines.reduce((sum, line) => sum + line.debit, 0);
 const totalCredit = journalLines.reduce((sum, line) => sum + line.credit, 0);
-if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal Credit');
+if (totalDebit !== totalCredit)
+  throw new BadRequestException("Debit must equal Credit");
 ```
 
 ##### [NEW] [journal.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/journal/journal.controller.ts)
+
 - POST `/companies/:slug/journals` (requires Accountant/Finance role)
 - POST `/companies/:slug/journals/:id/reverse`
 - GET `/companies/:slug/journals`
@@ -191,12 +207,14 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 ##### [NEW] [period.module.ts](file:///Users/mraiz_/Documents/journal/api/src/period/period.module.ts)
 
 ##### [NEW] [period.service.ts](file:///Users/mraiz_/Documents/journal/api/src/period/period.service.ts)
+
 - Create period
 - Open period
 - **Close period** (lock, no new journals allowed)
 - Validate journal posting against period status
 
 ##### [NEW] [period.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/period/period.controller.ts)
+
 - POST `/companies/:slug/periods`
 - PATCH `/companies/:slug/periods/:id/close` (Admin only)
 
@@ -207,11 +225,13 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### General Ledger Module
 
 ##### [NEW] [ledger.service.ts](file:///Users/mraiz_/Documents/journal/api/src/ledger/ledger.service.ts)
+
 - Get account balance (running total)
 - Get account transactions with date range
 - Calculate balance for Trial Balance
 
 ##### [NEW] [ledger.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/ledger/ledger.controller.ts)
+
 - GET `/companies/:slug/ledger/:accountId`
 
 ---
@@ -219,6 +239,7 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Financial Reports Module
 
 ##### [NEW] [report.service.ts](file:///Users/mraiz_/Documents/journal/api/src/report/report.service.ts)
+
 - **Trial Balance** (Before/After Adjustment, After Closing)
 - **Profit & Loss** (Revenue - Expense)
 - **Balance Sheet** (Asset = Liability + Equity)
@@ -228,6 +249,7 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 - Export to Excel (use library like `exceljs`)
 
 ##### [NEW] [report.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/report/report.controller.ts)
+
 - GET `/companies/:slug/reports/trial-balance`
 - GET `/companies/:slug/reports/profit-loss`
 - GET `/companies/:slug/reports/balance-sheet`
@@ -242,6 +264,7 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Sales (Invoice) Module
 
 ##### [NEW] [sales.service.ts](file:///Users/mraiz_/Documents/journal/api/src/sales/sales.service.ts)
+
 - Create invoice
 - **Auto-generate journal**:
   - Debit: Accounts Receivable
@@ -249,6 +272,7 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 - Calculate tax (PPN)
 
 ##### [NEW] [sales.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/sales/sales.controller.ts)
+
 - POST `/companies/:slug/sales/invoices`
 - GET `/companies/:slug/sales/invoices`
 
@@ -257,12 +281,14 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Purchase (Bill) Module
 
 ##### [NEW] [purchase.service.ts](file:///Users/mraiz_/Documents/journal/api/src/purchase/purchase.service.ts)
+
 - Create bill
 - **Auto-generate journal**:
   - Debit: Expense/Inventory
   - Credit: Accounts Payable
 
 ##### [NEW] [purchase.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/purchase/purchase.controller.ts)
+
 - POST `/companies/:slug/purchases/bills`
 - GET `/companies/:slug/purchases/bills`
 
@@ -271,12 +297,14 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Payment Module
 
 ##### [NEW] [payment.service.ts](file:///Users/mraiz_/Documents/journal/api/src/payment/payment.service.ts)
+
 - Record payment
 - **Auto-generate journal**:
   - Debit: Accounts Payable
   - Credit: Cash/Bank
 
 ##### [NEW] [payment.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/payment/payment.controller.ts)
+
 - POST `/companies/:slug/payments`
 
 ---
@@ -286,17 +314,21 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Master Data Module
 
 ##### [NEW] [customer.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/master-data/customer.controller.ts)
+
 - CRUD for customers
 - Import from Excel
 
 ##### [NEW] [vendor.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/master-data/vendor.controller.ts)
+
 - CRUD for vendors
 - Import from Excel
 
 ##### [NEW] [product.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/master-data/product.controller.ts)
+
 - CRUD for products/services
 
 ##### [NEW] [tax.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/master-data/tax.controller.ts)
+
 - Configure tax rates (PPN, PPh)
 
 ---
@@ -304,11 +336,13 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Currency & Exchange Rate Module
 
 ##### [NEW] [exchange-rate.service.ts](file:///Users/mraiz_/Documents/journal/api/src/exchange-rate/exchange-rate.service.ts)
+
 - Fetch rates from **Bank Indonesia API**
 - Store snapshots per period
 - Multi-currency transaction support
 
 ##### [NEW] [exchange-rate.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/exchange-rate/exchange-rate.controller.ts)
+
 - POST `/companies/:slug/exchange-rates/sync` (Admin only)
 - GET `/companies/:slug/exchange-rates`
 
@@ -317,10 +351,12 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Audit Log Module
 
 ##### [NEW] [audit.service.ts](file:///Users/mraiz_/Documents/journal/api/src/audit/audit.service.ts)
+
 - Log all changes (who, when, before/after)
 - **No delete functionality**
 
 ##### [NEW] [audit.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/audit/audit.controller.ts)
+
 - GET `/companies/:slug/audit-logs` (Auditor role)
 
 ---
@@ -330,12 +366,14 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Design System
 
 ##### [NEW] [tailwind.config.ts](file:///Users/mraiz_/Documents/journal/web/tailwind.config.ts)
+
 - Custom color palette (avoid plain red/blue/green)
 - Dark mode support
 - Typography (Google Fonts: Inter recommended)
 - Spacing and border radius tokens
 
 ##### [NEW] [assets/css/main.css](file:///Users/mraiz_/Documents/journal/web/assets/css/main.css)
+
 - Global styles
 - Custom utilities
 - Glassmorphism effects
@@ -346,11 +384,13 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Authentication Pages
 
 ##### [NEW] [pages/auth/register.vue](file:///Users/mraiz_/Documents/journal/web/pages/auth/register.vue)
+
 - Premium design with gradients and micro-animations
 - Form validation
 - Loading states
 
 ##### [NEW] [pages/auth/login.vue](file:///Users/mraiz_/Documents/journal/web/pages/auth/login.vue)
+
 - Eye-catching design
 - Remember me option
 - HTTP-only cookie handling
@@ -360,11 +400,13 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Company Management
 
 ##### [NEW] [pages/companies/index.vue](file:///Users/mraiz_/Documents/journal/web/pages/companies/index.vue)
+
 - List all companies user belongs to
 - Create new company
 - Join company flow
 
 ##### [NEW] [pages/[companySlug]/dashboard.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/dashboard.vue)
+
 - Company-specific dashboard
 - Key metrics and charts
 - Recent transactions
@@ -374,11 +416,13 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Chart of Accounts UI
 
 ##### [NEW] [pages/[companySlug]/accounts/index.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/accounts/index.vue)
+
 - Hierarchical tree view
 - PSAK type grouping
 - Lock/unlock accounts
 
 ##### [NEW] [components/accounts/AccountForm.vue](file:///Users/mraiz_/Documents/journal/web/components/accounts/AccountForm.vue)
+
 - Create/edit account
 - Parent account selection
 - Account type validation
@@ -388,6 +432,7 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Journal Entry UI
 
 ##### [NEW] [pages/[companySlug]/journals/create.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/journals/create.vue)
+
 - **Double-entry form with live balance validation**
 - Account selection with search
 - Date picker with period validation
@@ -395,11 +440,13 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 - Clear error messages
 
 ##### [NEW] [pages/[companySlug]/journals/index.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/journals/index.vue)
+
 - List journals with filters
 - Reverse journal action
 - View journal details modal
 
 ##### [NEW] [components/journals/JournalLineInput.vue](file:///Users/mraiz_/Documents/journal/web/components/journals/JournalLineInput.vue)
+
 - Reusable journal line component
 - Account autocomplete
 - Debit/Credit input
@@ -409,14 +456,17 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Financial Reports UI
 
 ##### [NEW] [pages/[companySlug]/reports/trial-balance.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/reports/trial-balance.vue)
+
 - Interactive table
 - Export to PDF/Excel
 
 ##### [NEW] [pages/[companySlug]/reports/profit-loss.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/reports/profit-loss.vue)
+
 - Hierarchical revenue/expense breakdown
 - Period comparison
 
 ##### [NEW] [pages/[companySlug]/reports/balance-sheet.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/reports/balance-sheet.vue)
+
 - Asset = Liability + Equity visualization
 
 ---
@@ -424,12 +474,14 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Transaction Modules UI
 
 ##### [NEW] [pages/[companySlug]/sales/invoices/create.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/sales/invoices/create.vue)
+
 - Invoice form with line items
 - Customer selection
 - Tax calculation preview
 - Show auto-generated journal preview
 
 ##### [NEW] [pages/[companySlug]/purchases/bills/create.vue](file:///Users/mraiz_/Documents/journal/web/pages/[companySlug]/purchases/bills/create.vue)
+
 - Bill form with line items
 - Vendor selection
 - Show auto-generated journal preview
@@ -439,16 +491,19 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### State Management (Pinia)
 
 ##### [NEW] [stores/auth.ts](file:///Users/mraiz_/Documents/journal/web/stores/auth.ts)
+
 - User state
 - Login/logout/refresh actions
 - HTTP-only cookie handling
 
 ##### [NEW] [stores/company.ts](file:///Users/mraiz_/Documents/journal/web/stores/company.ts)
+
 - Current company context
 - Company switching
 - User role in current company
 
 ##### [NEW] [stores/journal.ts](file:///Users/mraiz_/Documents/journal/web/stores/journal.ts)
+
 - Journal creation state
 - Validation logic
 
@@ -457,11 +512,13 @@ if (totalDebit !== totalCredit) throw new BadRequestException('Debit must equal 
 #### Responsive Design
 
 All pages must be fully responsive:
+
 - Mobile: Single column, bottom nav
 - Tablet: Two columns, sidebar
 - Desktop: Multi-column layouts, fixed sidebar
 
 **Breakpoints:**
+
 - sm: 640px
 - md: 768px
 - lg: 1024px
@@ -485,6 +542,7 @@ npm run test:e2e
 ```
 
 **Test Cases:**
+
 1. **Double-entry validation**: Create journal with unbalanced entries → should fail
 2. **Period lock**: Post journal to closed period → should fail
 3. **Journal immutability**: Attempt to edit/delete journal → should fail
@@ -501,6 +559,7 @@ npm run test
 ```
 
 **Test Cases:**
+
 1. Balance validation in journal form
 2. Company context switching
 3. HTTP-only cookie handling
@@ -510,6 +569,7 @@ npm run test
 ### Manual Verification
 
 #### Flow 1: User Onboarding & Multi-Company
+
 1. Register new user
 2. Create Company A (user auto-assigned as Admin)
 3. Create Company B
@@ -517,12 +577,14 @@ npm run test
 5. Switch to `/pt-company-b/dashboard` → verify context switches
 
 #### Flow 2: Chart of Accounts Setup
+
 1. Create Asset account (1000 - Cash)
 2. Create sub-account (1100 - Bank Account)
 3. Create Revenue account (4000 - Sales Revenue)
 4. Lock account → verify edit disabled
 
 #### Flow 3: Double-Entry Journal
+
 1. Navigate to Journal Create page
 2. Add line: Debit Cash 1,000,000
 3. Add line: Credit Sales Revenue 1,000,000
@@ -531,6 +593,7 @@ npm run test
 6. View journal list → verify immutability (no edit/delete buttons)
 
 #### Flow 4: Period Close & Lock
+
 1. Create Accounting Period (Jan 2026, status: Open)
 2. Post journal to Jan 2026 → success
 3. Close period
@@ -538,6 +601,7 @@ npm run test
 5. Verify period status UI shows "Closed"
 
 #### Flow 5: Financial Reports
+
 1. Post multiple journals (revenue + expenses)
 2. Generate Trial Balance → verify totals balance
 3. Generate Profit & Loss → verify Revenue - Expense = Net Income
@@ -546,6 +610,7 @@ npm run test
 6. Export to Excel → verify file format correct
 
 #### Flow 6: Auto-Journal from Invoice
+
 1. Navigate to Sales → Create Invoice
 2. Select customer
 3. Add line item (Product X, 1,000,000 + 10% PPN)
@@ -556,6 +621,7 @@ npm run test
    - Credit: PPN Output 100,000
 
 #### Flow 7: ACL Testing
+
 1. Login as Admin of Company A
 2. Verify can close periods
 3. Create user without Finance role
@@ -564,6 +630,7 @@ npm run test
 6. Verify can view reports (Auditor role)
 
 #### Flow 8: Responsive Design
+
 1. Open app on mobile (375px width)
 2. Verify navigation is accessible
 3. Verify journal form is usable
@@ -576,6 +643,7 @@ npm run test
 ### Browser Testing
 
 Use the browser tool to validate:
+
 - Login flow with HTTP-only cookies
 - Company switching via URL
 - Journal form validation (real-time balance check)
@@ -596,6 +664,7 @@ Use the browser tool to validate:
 ## Implementation Phases
 
 **Recommended approach:**
+
 1. **Phase 1-2**: Foundation & Auth (Week 1-2)
 2. **Phase 3**: Core Accounting (Week 3-4)
 3. **Phase 4**: Reporting (Week 5)
@@ -617,32 +686,35 @@ Use the browser tool to validate:
 
 This is a **complex, mission-critical system**. Accounting errors are unacceptable. Every financial calculation must be verified against PSAK standards.
 
-
 ### Backend
+
 1.  **[NEW] `ClosingService` (in `accounting-period` module)**
-    *   `closePeriod(periodId)`:
-        *   Validate period is open.
-        *   Calculate Net Income (Revenue - Expense).
-        *   Create Journal Entry:
-            *   Debit all Revenue accounts (to zero out).
-            *   Credit all Expense accounts (to zero out).
-            *   Credit/Debit difference to **Retained Earnings** (Equity).
-        *   Mark period as `CLOSED`.
-    *   `reopenPeriod(periodId)`:
-        *   Find and void the Closing Journal.
-        *   Mark period as `OPEN`.
+
+    - `closePeriod(periodId)`:
+      - Validate period is open.
+      - Calculate Net Income (Revenue - Expense).
+      - Create Journal Entry:
+        - Debit all Revenue accounts (to zero out).
+        - Credit all Expense accounts (to zero out).
+        - Credit/Debit difference to **Retained Earnings** (Equity).
+      - Mark period as `CLOSED`.
+    - `reopenPeriod(periodId)`:
+      - Find and void the Closing Journal.
+      - Mark period as `OPEN`.
 
 2.  **[MODIFY] `JournalService`**
-    *   Add `isReversal` flag to Journal.
-    *   Add `reverseJournal(journalId, date)`: Creates a new journal with swapped Debit/Credit.
+    - Add `isReversal` flag to Journal.
+    - Add `reverseJournal(journalId, date)`: Creates a new journal with swapped Debit/Credit.
 
 ### Frontend
+
 1.  **[MODIFY] `pages/[companySlug]/settings.vue` (or Periods page)**
-    *   Add "Close Period" button.
-    *   Show summary of closing entry before confirmation.
+    - Add "Close Period" button.
+    - Show summary of closing entry before confirmation.
 
 ## Verification
-*   Create distinct Revenue and Expense transactions.
-*   Run "Close Period".
-*   Verify Revenue/Expense balances are 0 in the **next** period (Post-Closing Trial Balance).
-*   Verify Retained Earnings increased by Net Income.
+
+- Create distinct Revenue and Expense transactions.
+- Run "Close Period".
+- Verify Revenue/Expense balances are 0 in the **next** period (Post-Closing Trial Balance).
+- Verify Retained Earnings increased by Net Income.

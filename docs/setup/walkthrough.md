@@ -35,11 +35,13 @@ Created a monorepo-style structure:
 Created comprehensive schema with **18+ tables**:
 
 **Core Tables:**
+
 - `users` - User accounts with hashed passwords
 - `companies` - Multi-tenant company entities
 - `company_users` - Many-to-many with roles (ADMIN, ACCOUNTANT, FINANCE, AUDITOR)
 
 **Accounting Tables:**
+
 - `accounts` - Chart of Accounts with PSAK types (ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE)
 - `journals` - Immutable journal headers
 - `journal_lines` - Double-entry journal entries
@@ -47,15 +49,19 @@ Created comprehensive schema with **18+ tables**:
 - `exchange_rates` - Currency snapshots per period
 
 **Master Data:**
+
 - `customers`, `vendors`, `products`, `taxes`
 
 **Transaction Modules:**
+
 - `sales_invoices`, `purchase_bills`, `payments`
 
 **Audit System:**
+
 - `audit_logs` - Immutable audit trail with CREATE, UPDATE, DELETE, VIEW, EXPORT actions
 
 **Key Features:**
+
 - Multi-level COA hierarchy support
 - Immutable journals (no edit/delete)
 - Foreign key enforcement
@@ -73,19 +79,23 @@ Implemented full JWT authentication with HTTP-only cookies:
 **Components Created:**
 
 1. **DTOs** ([dto/](file:///Users/mraiz_/Documents/journal/api/src/auth/dto/)):
+
    - [register.dto.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/dto/register.dto.ts) - Email, name, password validation
    - [login.dto.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/dto/login.dto.ts) - Email, password validation
 
 2. **Strategies** ([strategies/](file:///Users/mraiz_/Documents/journal/api/src/auth/strategies/)):
+
    - [jwt.strategy.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/strategies/jwt.strategy.ts) - Access token validation (7 days)
    - [refresh-jwt.strategy.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/strategies/refresh-jwt.strategy.ts) - Refresh token validation (30 days)
 
 3. **Guards** ([guards/](file:///Users/mraiz_/Documents/journal/api/src/auth/guards/)):
+
    - [jwt-auth.guard.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/guards/jwt-auth.guard.ts) - Protect routes
    - [refresh-jwt-auth.guard.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/guards/refresh-jwt-auth.guard.ts) - Protected refresh endpoint
    - [roles.guard.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/guards/roles.guard.ts) - Role-based access control
 
 4. **Decorators** ([common/decorators/](file:///Users/mraiz_/Documents/journal/api/src/common/decorators/)):
+
    - [current-user.decorator.ts](file:///Users/mraiz_/Documents/journal/api/src/common/decorators/current-user.decorator.ts) - Access authenticated user
    - [roles.decorator.ts](file:///Users/mraiz_/Documents/journal/api/src/common/decorators/roles.decorator.ts) - Specify required roles
 
@@ -94,6 +104,7 @@ Implemented full JWT authentication with HTTP-only cookies:
    - [auth.controller.ts](file:///Users/mraiz_/Documents/journal/api/src/auth/auth.controller.ts) - REST endpoints
 
 **Features:**
+
 - ✅ HTTP-only cookies (access_token + refresh_token)
 - ✅ Bcrypt password hashing
 - ✅ Refresh token rotation
@@ -102,6 +113,7 @@ Implemented full JWT authentication with HTTP-only cookies:
 - ✅ Token stored in database for validation
 
 **API Endpoints:**
+
 ```
 POST /auth/register   - Create new user
 POST /auth/login      - Authenticate and set cookies
@@ -116,10 +128,11 @@ POST /auth/logout     - Clear cookies and invalidate tokens
 #### ✅ Global Services
 
 - **Prisma Service**: Database connection lifecycle management
+
   - [prisma.service.ts](file:///Users/mraiz_/Documents/journal/api/src/prisma/prisma.service.ts)
   - [prisma.module.ts](file:///Users/mraiz_/Documents/journal/api/src/prisma/prisma.module.ts)
 
-- **App Configuration**: 
+- **App Configuration**:
   - Global validation pipes
   - Cookie parser middleware
   - CORS enabled for frontend communication
@@ -132,6 +145,7 @@ POST /auth/logout     - Clear cookies and invalidate tokens
 #### ✅ Premium Design System
 
 **Tailwind Configuration** ([tailwind.config.ts](file:///Users/mraiz_/Documents/journal/web/tailwind.config.ts)):
+
 - Custom color palette:
   - Primary: Indigo shades (600: #4f46e5)
   - Secondary: Teal shades (600: #0d9488)
@@ -141,6 +155,7 @@ POST /auth/logout     - Clear cookies and invalidate tokens
 - Glow effects for modern UI
 
 **Global Styles** ([main.css](file:///Users/mraiz_/Documents/journal/web/assets/css/main.css)):
+
 - Glass morphism card components
 - Button styles with hover animations and scale transitions
 - Input fields with focus rings
@@ -151,6 +166,7 @@ POST /auth/logout     - Clear cookies and invalidate tokens
 #### ✅ Application Configuration
 
 - **Nuxt Config** ([nuxt.config.ts](file:///Users/mraiz_/Documents/journal/web/nuxt.config.ts)):
+
   - TypeScript strict mode
   - Tailwind CSS + Pinia modules
   - API base URL configuration
@@ -165,6 +181,7 @@ POST /auth/logout     - Clear cookies and invalidate tokens
 #### ✅ Landing Page
 
 Premium landing page with:
+
 - Glass morphism hero section
 - Gradient text effects
 - Feature cards with hover animations
@@ -180,54 +197,60 @@ Premium landing page with:
 
 ### Backend
 
-| File | Purpose |
-|------|---------|
-| [.env.example](file:///Users/mraiz_/Documents/journal/api/.env.example) | Environment variables template |
-| [tsconfig.json](file:///Users/mraiz_/Documents/journal/api/tsconfig.json) | TypeScript configuration (strict mode) |
-| [nest-cli.json](file:///Users/mraiz_/Documents/journal/api/nest-cli.json) | NestJS CLI configuration |
-| [package.json](file:///Users/mraiz_/Documents/journal/api/package.json) | Dependencies and scripts |
-| [prisma.config.ts](file:///Users/mraiz_/Documents/journal/api/prisma.config.ts) | Prisma 7 database configuration |
+| File                                                                            | Purpose                                |
+| ------------------------------------------------------------------------------- | -------------------------------------- |
+| [.env.example](file:///Users/mraiz_/Documents/journal/api/.env.example)         | Environment variables template         |
+| [tsconfig.json](file:///Users/mraiz_/Documents/journal/api/tsconfig.json)       | TypeScript configuration (strict mode) |
+| [nest-cli.json](file:///Users/mraiz_/Documents/journal/api/nest-cli.json)       | NestJS CLI configuration               |
+| [package.json](file:///Users/mraiz_/Documents/journal/api/package.json)         | Dependencies and scripts               |
+| [prisma.config.ts](file:///Users/mraiz_/Documents/journal/api/prisma.config.ts) | Prisma 7 database configuration        |
 
 ### Frontend
 
-| File | Purpose |
-|------|---------|
-| [nuxt.config.ts](file:///Users/mraiz_/Documents/journal/web/nuxt.config.ts) | Nuxt 4 configuration |
-| [tailwind.config.ts](file:///Users/mraiz_/Documents/journal/web/tailwind.config.ts) | Tailwind theming |
-| [tsconfig.json](file:///Users/mraiz_/Documents/journal/web/tsconfig.json) | TypeScript configuration |
-| [package.json](file:///Users/mraiz_/Documents/journal/web/package.json) | Dependencies and scripts |
+| File                                                                                | Purpose                  |
+| ----------------------------------------------------------------------------------- | ------------------------ |
+| [nuxt.config.ts](file:///Users/mraiz_/Documents/journal/web/nuxt.config.ts)         | Nuxt 4 configuration     |
+| [tailwind.config.ts](file:///Users/mraiz_/Documents/journal/web/tailwind.config.ts) | Tailwind theming         |
+| [tsconfig.json](file:///Users/mraiz_/Documents/journal/web/tsconfig.json)           | TypeScript configuration |
+| [package.json](file:///Users/mraiz_/Documents/journal/web/package.json)             | Dependencies and scripts |
 
 ---
 
 ## Dependencies Installed
 
 ### Backend
+
 ```json
 {
   "dependencies": [
-    "@nestjs/core", "@nestjs/common", "@nestjs/platform-express",
-    "@nestjs/config", "@nestjs/jwt", "@nestjs/passport",
-    "@prisma/client", "prisma",
-    "passport", "passport-jwt", "bcrypt", "cookie-parser",
-    "class-validator", "class-transformer",
-    "reflect-metadata", "rxjs", "typescript"
+    "@nestjs/core",
+    "@nestjs/common",
+    "@nestjs/platform-express",
+    "@nestjs/config",
+    "@nestjs/jwt",
+    "@nestjs/passport",
+    "@prisma/client",
+    "prisma",
+    "passport",
+    "passport-jwt",
+    "bcrypt",
+    "cookie-parser",
+    "class-validator",
+    "class-transformer",
+    "reflect-metadata",
+    "rxjs",
+    "typescript"
   ],
-  "devDependencies": [
-    "@nestjs/cli", "@nestjs/schematics", "prettier"
-  ]
+  "devDependencies": ["@nestjs/cli", "@nestjs/schematics", "prettier"]
 }
 ```
 
 ### Frontend
+
 ```json
 {
-  "dependencies": [
-    "vue", "nuxt",
-    "@pinia/nuxt", "pinia"
-  ],
-  "devDependencies": [
-    "@nuxtjs/tailwindcss", "sass"
-  ]
+  "dependencies": ["vue", "nuxt", "@pinia/nuxt", "pinia"],
+  "devDependencies": ["@nuxtjs/tailwindcss", "sass"]
 }
 ```
 
@@ -253,11 +276,11 @@ npx prisma generate
 
 ### 3. Database Setup
 
-> [!IMPORTANT]
-> **PostgreSQL Required**
+> [!IMPORTANT] > **PostgreSQL Required**
 > You need to set up a PostgreSQL database before continuing.
 
 **Option 1: Local PostgreSQL**
+
 ```bash
 # Update .env with your database URL
 DATABASE_URL="postgresql://user:password@localhost:5432/nusa_journal?schema=public"
@@ -267,6 +290,7 @@ npx prisma migrate dev --name init
 ```
 
 **Option 2: Cloud Database (recommended for development)**
+
 ```bash
 # Use Supabase, Neon, or Vercel Postgres
 # Update DATABASE_URL in .env
@@ -280,6 +304,7 @@ npm run start:dev
 ```
 
 Expected output:
+
 ```
 🚀 Nusa Journal API running on: http://localhost:3001
 ```
@@ -292,6 +317,7 @@ npm run dev
 ```
 
 Expected output:
+
 ```
 Nuxt 4.x.x with Nitro 2.x.x
 ➜ Local:    http://localhost:3000/
@@ -300,6 +326,7 @@ Nuxt 4.x.x with Nitro 2.x.x
 ### 6. Continue Implementation
 
 **Priority modules to build next:**
+
 1. **Company Module** - Create, join, approve company access
 2. **Chart of Accounts** - CRUD with hierarchy support
 3. **Journal Module** - Double-entry journal creation
@@ -311,17 +338,20 @@ Nuxt 4.x.x with Nitro 2.x.x
 ## Architecture Highlights
 
 ### Multi-Company Isolation
+
 - URL-based company context: `/pt-company-slug/...`
 - Separate roles per company
 - Data isolation at database level
 
 ### Accounting Principles
+
 - **Double-entry mandatory**: Debit = Credit validation
 - **Immutable journals**: Corrections via Reverse Journal only
 - **Period locks**: No posting to closed periods
 - **Audit trail**: All changes logged permanently
 
 ### Security
+
 - HTTP-only cookies (no XSS attacks)
 - Bcrypt password hashing
 - JWT with refresh token rotation
@@ -329,6 +359,7 @@ Nuxt 4.x.x with Nitro 2.x.x
 - CORS configuration
 
 ### Performance
+
 - Connection pooling via Prisma
 - Decimal precision for financial data
 - Indexed foreign keys
@@ -339,6 +370,7 @@ Nuxt 4.x.x with Nitro 2.x.x
 ## Development Commands
 
 ### Backend
+
 ```bash
 npm run start:dev    # Development server with hot reload
 npm run build        # Production build
@@ -349,6 +381,7 @@ npx prisma migrate dev  # Create and apply migration
 ```
 
 ### Frontend
+
 ```bash
 npm run dev          # Development server
 npm run build        # Production build
@@ -403,6 +436,7 @@ web/
 ## Summary
 
 ✅ **Completed:**
+
 - Project structure setup
 - Comprehensive Prisma schema (18+ tables)
 - Full JWT authentication system
@@ -412,10 +446,12 @@ web/
 - Landing page with glass morphism
 
 ⏳ **In Progress:**
+
 - Installing remaining type definitions
 - Database setup and migrations
 
 📋 **Next:**
+
 - Company management module
 - Chart of Accounts implementation
 - Journal entry system
@@ -425,54 +461,62 @@ web/
 The foundation is solid and ready for rapid feature development! 🚀
 
 # Full Accounting Cycle - Implementation Walkthrough
+
 This update completes the implementation of the **Full 10-Step Accounting Cycle** in the Nusa Journal application. The core addition is the **Automated Period Closing** workflow and the verification of **Reversing Entries**.
 
 ## Features Implemented
 
 ### 1. Automated Period Closing (Step 8: Closing Entries)
+
 **Goal:** Zero out Temporary Accounts (Revenue & Expense) and transfer the Net Income/Loss to Retained Earnings (Equity).
 
 **Workflow:**
+
 1.  Navigate to **Settings > Accounting Periods**.
 2.  Locate an `OPEN` period.
 3.  Click **"🔒 Tutup Buku"**.
 4.  The system calculates Net Income (Revenue - Expenses).
 5.  A **Closing Journal (JV...)** is automatically created:
-    *   **Debits** all Revenue accounts (to zero them).
-    *   **Credits** all Expense accounts (to zero them).
-    *   **Credits** Retained Earnings (if Profit) or **Debits** it (if Loss).
+    - **Debits** all Revenue accounts (to zero them).
+    - **Credits** all Expense accounts (to zero them).
+    - **Credits** Retained Earnings (if Profit) or **Debits** it (if Loss).
 6.  The Period status changes to `CLOSED`.
 
 **Technical Implementation:**
-*   **Service:** `ClosingService` handles the logic.
-*   **Constraint:** Users cannot post new journals to a `CLOSED` period.
+
+- **Service:** `ClosingService` handles the logic.
+- **Constraint:** Users cannot post new journals to a `CLOSED` period.
 
 ### 2. Journal Reversal (Step 10: Reversing Entries)
+
 **Goal:** Allow easy correction of accruals or errors by reversing a journal entry.
 
 **Workflow:**
+
 1.  Navigate to **Journals > Detail**.
 2.  Click **"Reverse Jurnal"** (Red button).
 3.  The system creates a new Journal:
-    *   Copies all lines but swaps **Debit** and **Credit**.
-    *   Marks the original journal as `Reversed`.
-    *   Links the two journals for audit trails.
+    - Copies all lines but swaps **Debit** and **Credit**.
+    - Marks the original journal as `Reversed`.
+    - Links the two journals for audit trails.
 
 ## Verification Steps performed
 
 ### ✅ Period Closing
+
 1.  Created dummy Revenue and Expense transactions in an Open period.
 2.  Triggered "Close Period".
 3.  **Result:**
-    *   New Closing Journal created.
-    *   Revenue/Expense balances for that period became 0.
-    *   Retained Earnings increased by the Net Income amount.
-    *   Period marked as Closed.
+    - New Closing Journal created.
+    - Revenue/Expense balances for that period became 0.
+    - Retained Earnings increased by the Net Income amount.
+    - Period marked as Closed.
 
 ### ✅ Journal Reversal
+
 1.  Opened an existing Journal.
 2.  Clicked "Reverse".
 3.  **Result:**
-    *   New Reversal Journal created with opposite amounts.
-    *   Original Journal marked as "Reversed".
-    *   GL Impact effectively neutralized.
+    - New Reversal Journal created with opposite amounts.
+    - Original Journal marked as "Reversed".
+    - GL Impact effectively neutralized.

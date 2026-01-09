@@ -82,7 +82,7 @@
               <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-soft group-hover:scale-105 transition-transform">
                 {{ getInitials(company.name) }}
               </div>
-              <span class="badge badge-primary">{{ company.plan || 'FREE' }}</span>
+              
             </div>
             <h3 class="text-lg font-bold text-neutral-800 mb-1 group-hover:text-primary-600 transition-colors">
               {{ company.name }}
