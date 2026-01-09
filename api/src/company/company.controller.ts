@@ -15,6 +15,7 @@ import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
 import { UpdateCompanySettingsDto } from './dto/update-company-settings.dto';
+import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -118,6 +119,21 @@ export class CompanyController {
     @Param('userId') userId: string,
   ) {
     return this.companyService.removeUser(tenantSlug, userId);
+  }
+
+  /**
+   * Update user role (tenant-scoped, Admin only)
+   */
+  @Patch(':tenantSlug/company/users/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @HttpCode(HttpStatus.OK)
+  async updateUserRole(
+    @Param('tenantSlug') tenantSlug: string,
+    @Param('userId') userId: string,
+    @Body(ValidationPipe) dto: UpdateCompanyUserDto,
+  ) {
+    return this.companyService.updateUserRole(tenantSlug, userId, dto);
   }
 
   /**

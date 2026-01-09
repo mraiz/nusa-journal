@@ -5,11 +5,13 @@ import {
   Logger,
   ConflictException,
 } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { RegistryPrismaService } from '../tenancy/registry-prisma.service';
 import { PrismaClientManager } from '../tenancy/prisma-client-manager.service';
 import { TenantProvisioningService } from '../tenancy/tenant-provisioning.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
+import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
 
 @Injectable()
 export class CompanyService {
@@ -410,6 +412,53 @@ export class CompanyService {
     this.logger.log(`User ${userId} removed from ${tenantSlug}`);
 
     return { message: 'User removed successfully' };
+  }
+
+  /**
+   * Update user role
+   */
+  async updateUserRole(tenantSlug: string, userId: string, dto: UpdateCompanyUserDto) {
+    const tenantPrisma = await this.prismaClientManager.getClient(tenantSlug);
+
+    const company = await tenantPrisma.company.findFirst();
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    const companyUser = await tenantPrisma.companyUser.findUnique({
+      where: {
+        userId_companyId: {
+          userId,
+          companyId: company.id,
+        },
+      },
+    });
+
+    if (!companyUser) {
+      throw new NotFoundException('User not found in company');
+    }
+
+    const updated = await tenantPrisma.companyUser.update({
+      where: {
+        userId_companyId: {
+          userId,
+          companyId: company.id,
+        },
+      },
+      data: {
+        role: dto.role as Role,
+      },
+      include: {
+        user: { select: { email: true, name: true } }
+      }
+    }) as any; // Cast to any to avoid "Property 'user' does not exist" if inference fails
+
+    this.logger.log(`User ${updated.user.email} role updated to ${dto.role} in ${tenantSlug}`);
+
+    return {
+      userId: updated.userId,
+      role: updated.role,
+    };
   }
 
   /**

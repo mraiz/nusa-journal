@@ -144,9 +144,14 @@
                 <span v-else class="text-red-500">{{ member.status }}</span>
               </td>
               <td class="px-6 py-4 text-right">
-                <button v-if="isAdmin" class="text-red-400 hover:text-red-600 text-sm font-medium" @click="confirmRemove(member)">
-                  Hapus
-                </button>
+                <div v-if="isAdmin && member.email !== authStore.user?.email" class="flex justify-end gap-2">
+                  <button class="text-primary-600 hover:text-primary-800 text-sm font-medium" @click="handleEdit(member)">
+                     <PencilSquareIcon class="w-5 h-5" />
+                  </button>
+                  <button class="text-red-400 hover:text-red-600 text-sm font-medium" @click="confirmRemove(member)">
+                    <TrashIcon class="w-5 h-5" />
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -190,6 +195,33 @@
       </div>
     </div>
 
+    <!-- Edit User Modal -->
+    <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-fade-in">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 animate-scale-up">
+        <h3 class="text-xl font-bold text-neutral-800 mb-2">Edit Anggota</h3>
+        <p class="text-sm text-neutral-500 mb-6">Ubah peran/akses user <strong>{{ editForm.name }}</strong> ({{ editForm.email }}).</p>
+        
+        <form @submit.prevent="submitEdit" class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-xs font-semibold text-neutral-500 uppercase">Peran (Role)</label>
+            <select v-model="editForm.role" class="input py-2">
+              <option value="FINANCE">Finance (Staff Keuangan)</option>
+              <option value="ACCOUNTANT">Accountant (Akuntan)</option>
+              <option value="AUDITOR">Auditor (Read Only)</option>
+              <option value="ADMIN">Admin (Full Access)</option>
+            </select>
+          </div>
+
+          <div class="flex justify-end gap-2 mt-6">
+            <button type="button" class="btn btn-secondary" @click="showEditModal = false">Batal</button>
+            <button type="submit" class="btn btn-primary" :disabled="companyStore.loading">
+              {{ companyStore.loading ? 'Menyimpan...' : 'Simpan Perubahan' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </NuxtLayout>
 </template>
 
@@ -197,6 +229,8 @@
 import { useCompanyStore } from '~/stores/company';
 import { useAccountStore } from '~/stores/account';
 import { useAuthStore } from '~/stores/auth';
+import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/20/solid'
+
 
 const route = useRoute()
 const companyStore = useCompanyStore()
@@ -223,17 +257,28 @@ const assetAccounts = computed(() => allAccounts.value.filter(a => a.type === 'A
 const liabilityAccounts = computed(() => allAccounts.value.filter(a => a.type === 'LIABILITY' && a.isPosting))
 
 const isAdmin = computed(() => {
-  return companyStore.currentCompany?.role === 'ADMIN'
+  // 1. Try direct role from currentCompany (works if navigated from dashboard)
+  if (companyStore.currentCompany?.role === 'ADMIN') return true
+  
+  // 2. Fallback: Find self in companyUsers list (works if direct load)
+  if (authStore.user?.email && companyStore.companyUsers.length > 0) {
+      const me = companyStore.companyUsers.find(u => u.email === authStore.user?.email)
+      return me?.role === 'ADMIN'
+  }
+  
+  return false
 })
 
 onMounted(async () => {
-  if (companyStore.currentCompany) {
-    companyStore.fetchCompanyUsers(companyStore.currentCompany.slug)
+  const slug = route.params.companySlug as string
+  if (slug) {
+    // Always fetch users when entering settings
+    companyStore.fetchCompanyUsers(slug)
     
     // Fetch accounts for settings tab
     accountsLoading.value = true
     try {
-      const accRes = await accountStore.fetchAccounts(companyStore.currentCompany.slug, { limit: 500 })
+      const accRes = await accountStore.fetchAccounts(slug, { limit: 500 })
       if (accRes.data) {
         allAccounts.value = accRes.data
       } else if (Array.isArray(accRes)) {
@@ -241,7 +286,13 @@ onMounted(async () => {
       }
       
       // Also fetch current company settings
-      const companyData = await authStore.fetchWithAuth(`/${route.params.companySlug}/company`)
+      const companyData = await authStore.fetchWithAuth(`/${slug}/company`)
+      
+      // Ensure store has current company data so isAdmin works
+      if (!companyStore.currentCompany) {
+          companyStore.currentCompany = companyData
+      }
+
       accountSettings.accountsReceivableId = companyData.accountsReceivableId || ''
       accountSettings.accountsPayableId = companyData.accountsPayableId || ''
     } catch (err) {
@@ -277,8 +328,36 @@ const submitInvite = async () => {
     alert('Berhasil memproses anggota!')
     showInviteModal.value = false
     inviteForm.email = ''
-  } catch (e) {
-    alert('Gagal: ' + e)
+  } catch (e: any) {
+    alert('Gagal: ' + e.message)
+  }
+}
+
+// Edit Role
+const showEditModal = ref(false)
+const editForm = reactive({
+  userId: '',
+  name: '',
+  email: '',
+  role: ''
+})
+
+const handleEdit = (member: any) => {
+  editForm.userId = member.userId
+  editForm.name = member.name
+  editForm.email = member.email
+  editForm.role = member.role
+  showEditModal.value = true
+}
+
+const submitEdit = async () => {
+  if (!companyStore.currentCompany) return
+  try {
+    await companyStore.updateUser(companyStore.currentCompany.slug, editForm.userId, editForm.role)
+    alert('Role user berhasil diperbarui!')
+    showEditModal.value = false
+  } catch (e: any) {
+    alert('Gagal update role: ' + e.message)
   }
 }
 
@@ -288,8 +367,8 @@ const confirmRemove = async (member: any) => {
   if (confirm(`Yakin ingin menghapus akses user ${member.name}?`)) {
     try {
       await companyStore.removeUser(companyStore.currentCompany.slug, member.userId)
-    } catch (e) {
-      alert('Gagal menghapus user: ' + e)
+    } catch (e: any) {
+      alert('Gagal menghapus user: ' + e.message)
     }
   }
 }

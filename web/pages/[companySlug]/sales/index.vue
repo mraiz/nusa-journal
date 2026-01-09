@@ -68,7 +68,7 @@
                         <td class="px-6 py-4 text-sm text-right font-mono font-medium text-slate-900">
                             {{ new Intl.NumberFormat('id-ID').format(item.total) }}
                         </td>
-                        <td class="px-6 py-4 text-right">
+                        <td class="px-6 py-4 flex justify-center items-center">
                              <NuxtLink :to="`/${route.params.companySlug}/sales/${item.id}`" class="text-slate-400 hover:text-primary-600 transition-colors">
                                 <EyeIcon class="h-5 w-5" />
                              </NuxtLink>

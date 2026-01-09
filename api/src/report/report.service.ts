@@ -239,6 +239,7 @@ export class ReportService {
         accounts: assetAccounts.map(a => ({
           code: a.account.code,
           name: a.account.name,
+          classification: a.account.classification,
           amount: a.balance,
         })),
         total: totalAssets.toNumber(),
@@ -307,8 +308,15 @@ export class ReportService {
   private calculateCashBalance(assets: any[]): number {
     return assets
       .filter(a => {
+        // Check Classification first if available
+        if (a.classification) {
+             const cls = a.classification.toLowerCase();
+             if (cls.includes('cash') || cls.includes('kas') || cls.includes('bank') || cls.includes('setara kas')) return true;
+        }
+        
+        // Fallback to Name check
         const lowerName = a.name.toLowerCase();
-        return lowerName.includes('kas') || lowerName.includes('bank') || lowerName.includes('cash');
+        return lowerName.includes('kas') || lowerName.includes('bank') || lowerName.includes('cash') || lowerName.includes('rekening');
       })
       .reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
   }

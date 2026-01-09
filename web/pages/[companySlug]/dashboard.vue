@@ -12,7 +12,7 @@
         </h1>
         <p class="text-neutral-600 mt-2 text-lg">
           Berikut ringkasan performa bisnis <span class="font-bold text-neutral-800">{{ currentCompany?.name }}</span> 
-          <span v-if="periodStore.currentPeriod">untuk periode {{ periodStore.currentPeriod.name }}</span>.
+          <span v-if="periodStore.currentPeriod"> untuk periode {{ periodStore.currentPeriod.name }}</span>.
         </p>
       </div>
     </div>
@@ -141,7 +141,12 @@
             </div>
           </div>
 
-          <!-- Quick Actions -->
+       
+
+        </div>
+      </div>
+
+         <!-- Quick Actions -->
           <div class="glass-card p-6">
             <h3 class="font-bold text-neutral-800 mb-4">Akses Cepat</h3>
             <div class="grid grid-cols-2 gap-3">
@@ -170,9 +175,6 @@
               </NuxtLink>
             </div>
           </div>
-
-        </div>
-      </div>
     </div>
   </NuxtLayout>
 </template>
@@ -279,7 +281,7 @@ const stats = computed(() => {
       },
       { 
         title: 'Saldo Kas', 
-        value: m?.cashBalance ? formatShort(m.cashBalance) : '-', 
+        value: m?.cashBalance !== undefined ? formatShort(m.cashBalance) : '-', 
         trend: 'Liquid', 
         trendUp: true, 
         bgClass: 'bg-primary-500', 

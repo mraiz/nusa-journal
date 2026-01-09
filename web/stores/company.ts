@@ -85,6 +85,20 @@ export const useCompanyStore = defineStore('company', () => {
     }
   }
 
+  // Update user role
+  const updateUser = async (slug: string, userId: string, role: string) => {
+    loading.value = true
+    try {
+      await $api(`/${slug}/company/users/${userId}`, {
+        method: 'PATCH',
+        body: { role }
+      })
+      await fetchCompanyUsers(slug)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     companies,
@@ -95,6 +109,7 @@ export const useCompanyStore = defineStore('company', () => {
     selectCompany,
     fetchCompanyUsers,
     inviteUser,
-    removeUser
+    removeUser,
+    updateUser
   }
 })
