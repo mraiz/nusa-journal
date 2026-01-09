@@ -3,10 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   * {
     @apply border-neutral-200;
   }
-  
+
   body {
     @apply bg-gradient-to-br from-neutral-50 via-primary-50/30 to-accent-50/20 text-neutral-900 antialiased min-h-screen;
   }
@@ -17,28 +21,28 @@
   .glass-card {
     @apply bg-white/70 backdrop-blur-xl rounded-2xl shadow-soft border border-white/40 transition-all duration-300;
   }
-  
+
   .glass-card:hover {
     @apply shadow-soft-lg transform -translate-y-0.5;
   }
-  
+
   /* Premium Button Styles */
   .btn {
     @apply px-5 py-2.5 rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
-  
+
   .btn-primary {
     @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-soft hover:shadow-soft-lg hover:from-primary-600 hover:to-primary-700 focus:ring-primary-400 transform hover:scale-[1.02] active:scale-[0.98];
   }
-  
+
   .btn-accent {
     @apply bg-gradient-to-r from-accent-500 to-accent-600 text-white shadow-soft hover:shadow-soft-lg hover:from-accent-600 hover:to-accent-700 focus:ring-accent-400 transform hover:scale-[1.02] active:scale-[0.98];
   }
-  
+
   .btn-secondary {
     @apply bg-neutral-100 text-neutral-700 hover:bg-neutral-200 focus:ring-neutral-400 border border-neutral-200;
   }
-  
+
   /* Premium Input */
   .input {
     @apply w-full px-4 py-3 rounded-xl border border-neutral-300 bg-white/80 backdrop-blur-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all duration-200 outline-none placeholder:text-neutral-400;
@@ -53,64 +57,64 @@
   }
 
   /* Enhanced Date Input */
-  input[type="date"].input {
+  input[type='date'].input {
     @apply appearance-none min-h-[48px] text-neutral-600;
   }
-  
+
   /* Custom Calendar Icon for Date Input */
-  input[type="date"].input::-webkit-calendar-picker-indicator {
+  input[type='date'].input::-webkit-calendar-picker-indicator {
     @apply opacity-60 hover:opacity-100 cursor-pointer transition-opacity duration-200;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%234F46E5' stroke-width='1.5'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'/%3e%3c/svg%3e");
     width: 1.25rem;
     height: 1.25rem;
   }
-  
+
   .input:disabled {
     @apply bg-neutral-50 cursor-not-allowed;
   }
-  
+
   /* Interactive Card */
   .card-interactive {
     @apply glass-card cursor-pointer hover:border-primary-300/60 hover:shadow-glow-blue;
   }
-  
+
   /* Loading Skeleton with shimmer */
   .skeleton {
     @apply animate-pulse bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 rounded-lg;
     background-size: 1000px 100%;
   }
-  
+
   /* Badge */
   .badge {
     @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
   }
-  
+
   .badge-primary {
     @apply bg-primary-100 text-primary-700 border border-primary-200;
   }
-  
+
   .badge-accent {
     @apply bg-accent-100 text-accent-700 border border-accent-200;
   }
-  
+
   /* Gradient Text */
   .text-gradient-primary {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-800;
   }
-  
+
   .text-gradient-accent {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-accent-600 to-accent-800;
   }
-  
+
   /* Floating Label Input */
   .input-group {
     @apply relative;
   }
-  
+
   .input-floating {
     @apply peer w-full px-4 pt-6 pb-2 rounded-xl border border-neutral-300 bg-white/80 backdrop-blur-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all duration-200 outline-none;
   }
-  
+
   .label-floating {
     @apply absolute left-4 top-4 text-neutral-500 text-sm transition-all duration-200 pointer-events-none peer-focus:top-2 peer-focus:text-xs peer-focus:text-primary-600 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:text-xs;
   }
@@ -121,24 +125,24 @@
   .transition-smooth {
     @apply transition-all duration-300 ease-out;
   }
-  
+
   .transition-bounce {
     @apply transition-all duration-300 ease-in-out;
   }
-  
+
   /* Gradient backgrounds */
   .gradient-primary {
     @apply bg-gradient-to-br from-primary-400 via-primary-500 to-primary-600;
   }
-  
+
   .gradient-accent {
     @apply bg-gradient-to-br from-accent-400 via-accent-500 to-accent-600;
   }
-  
+
   .gradient-soft {
     @apply bg-gradient-to-br from-primary-50 via-white to-accent-50;
   }
-  
+
   /* Backdrop effects */
   .glass-effect {
     @apply bg-white/60 backdrop-blur-xl border border-white/40;
