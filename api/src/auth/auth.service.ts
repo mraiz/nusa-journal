@@ -4,15 +4,15 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { PrismaClientManager } from '../tenancy/prisma-client-manager.service';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import * as bcrypt from 'bcrypt';
-import { Response } from 'express';
+} from "@nestjs/common";
+import { PrismaClientManager } from "../tenancy/prisma-client-manager.service";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import { PrismaService } from "../prisma/prisma.service";
+import { RegisterDto } from "./dto/register.dto";
+import { LoginDto } from "./dto/login.dto";
+import * as bcrypt from "bcrypt";
+import { Response } from "express";
 
 @Injectable()
 export class AuthService {
@@ -20,7 +20,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    private prismaClientManager: PrismaClientManager,
+    private prismaClientManager: PrismaClientManager
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -38,7 +38,7 @@ export class AuthService {
       // If user exists AND has a password, conflict.
       // If user exists but NO password (phantom), we activate them.
       if (user.password && user.password.length > 0) {
-        throw new ConflictException('User with this email already exists');
+        throw new ConflictException("User with this email already exists");
       }
 
       // Activate phantom user
@@ -66,7 +66,7 @@ export class AuthService {
     }
 
     return {
-      message: 'User registered successfully',
+      message: "User registered successfully",
       user: {
         id: user.id,
         email: user.email,
@@ -78,41 +78,41 @@ export class AuthService {
   private async handleCompanyJoin(userId: string, email: string, slug: string) {
     try {
       const tenantPrisma = await this.prismaClientManager.getClient(slug);
-      
+
       const company = await tenantPrisma.company.findFirst();
       if (!company) return; // Slug might be invalid, ignore silently or warn
 
       // Check if membership exists (e.g. from Invite)
       const existingMember = await tenantPrisma.companyUser.findUnique({
-         where: { userId_companyId: { userId, companyId: company.id } }
+        where: { userId_companyId: { userId, companyId: company.id } },
       });
 
       if (existingMember) {
-         // If already invited (PENDING), activate them
-         // Role is already set by invite
-         if (existingMember.status === 'PENDING') {
-            await tenantPrisma.companyUser.update({
-               where: { userId_companyId: { userId, companyId: company.id } },
-               data: { status: 'APPROVED' } // Auto-approve if they register with correct code? 
-               // Wait, requirements: "ketika email yang dia daftarkan sudah ada di list member yang statusnya pending invitation maka saat register nya berhasil... dia sudah punya company"
-               // "role nya adalah role yang diset admin saat menambahkan user"
-               // So yes, Auto-Approve invited users.
-            });
-         }
+        // If already invited (PENDING), activate them
+        // Role is already set by invite
+        if (existingMember.status === "PENDING") {
+          await tenantPrisma.companyUser.update({
+            where: { userId_companyId: { userId, companyId: company.id } },
+            data: { status: "APPROVED" }, // Auto-approve if they register with correct code?
+            // Wait, requirements: "ketika email yang dia daftarkan sudah ada di list member yang statusnya pending invitation maka saat register nya berhasil... dia sudah punya company"
+            // "role nya adalah role yang diset admin saat menambahkan user"
+            // So yes, Auto-Approve invited users.
+          });
+        }
       } else {
-         // Not invited, but user wants to join. 
-         // "kalau dia tidak ada di list member... status nya pending... admin assign role"
-         await tenantPrisma.companyUser.create({
-            data: {
-               userId,
-               companyId: company.id,
-               status: 'PENDING',
-               role: 'FINANCE' // Placeholder, Admin must set real role on approval
-            }
-         });
+        // Not invited, but user wants to join.
+        // "kalau dia tidak ada di list member... status nya pending... admin assign role"
+        await tenantPrisma.companyUser.create({
+          data: {
+            userId,
+            companyId: company.id,
+            status: "PENDING",
+            role: "FINANCE", // Placeholder, Admin must set real role on approval
+          },
+        });
       }
     } catch (e) {
-      console.error('Failed to handle company join', e);
+      console.error("Failed to handle company join", e);
       // Don't block registration if company join fails
     }
   }
@@ -126,7 +126,7 @@ export class AuthService {
       include: {
         companyUsers: {
           where: {
-            status: 'APPROVED',
+            status: "APPROVED",
           },
           include: {
             company: true,
@@ -136,14 +136,14 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     // Get user's first approved company (if any)
@@ -151,11 +151,17 @@ export class AuthService {
 
     if (!userCompany) {
       // User has no companies yet - still return tokens but with empty company context
-      const tokens = await this.generateTokens(user.id, user.email, user.name, '', []);
+      const tokens = await this.generateTokens(
+        user.id,
+        user.email,
+        user.name,
+        "",
+        []
+      );
       this.setTokenCookies(response, tokens);
 
       return {
-        message: 'Login successful - no company assigned yet',
+        message: "Login successful - no company assigned yet",
         user: {
           id: user.id,
           email: user.email,
@@ -171,7 +177,7 @@ export class AuthService {
       user.email,
       user.name,
       userCompany.companyId,
-      [userCompany.role],
+      [userCompany.role]
     );
 
     // Update refresh token in database
@@ -185,7 +191,7 @@ export class AuthService {
     this.setTokenCookies(response, tokens);
 
     return {
-      message: 'Login successful',
+      message: "Login successful",
       user: {
         id: user.id,
         email: user.email,
@@ -212,15 +218,21 @@ export class AuthService {
     });
 
     if (!companyUser) {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException("Invalid token");
     }
 
     // Get user info
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user) throw new UnauthorizedException("User not found");
 
     // Generate new tokens
-    const tokens = await this.generateTokens(userId, user.email, user.name, companyId, [companyUser.role]);
+    const tokens = await this.generateTokens(
+      userId,
+      user.email,
+      user.name,
+      companyId,
+      [companyUser.role]
+    );
 
     // Update refresh token in database
     const hashedRefreshToken = await bcrypt.hash(tokens.refreshToken, 10);
@@ -232,7 +244,7 @@ export class AuthService {
     // Set HTTP-only cookies
     this.setTokenCookies(response, tokens);
 
-    return { message: 'Tokens refreshed successfully' };
+    return { message: "Tokens refreshed successfully" };
   }
 
   async logout(userId: string, response: Response) {
@@ -243,10 +255,10 @@ export class AuthService {
     });
 
     // Clear cookies
-    response.clearCookie('access_token');
-    response.clearCookie('refresh_token');
+    response.clearCookie("access_token");
+    response.clearCookie("refresh_token");
 
-    return { message: 'Logged out successfully' };
+    return { message: "Logged out successfully" };
   }
 
   private async generateTokens(
@@ -254,7 +266,7 @@ export class AuthService {
     email: string,
     name: string,
     companyId: string,
-    roles: string[],
+    roles: string[]
   ) {
     const accessTokenPayload = {
       sub: userId,
@@ -272,13 +284,13 @@ export class AuthService {
     };
 
     const accessToken = await this.jwtService.signAsync(accessTokenPayload, {
-      secret: this.configService.get('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION') || '7d',
+      secret: this.configService.get("JWT_ACCESS_SECRET"),
+      expiresIn: this.configService.get("JWT_ACCESS_EXPIRATION") || "7d",
     });
 
     const refreshToken = await this.jwtService.signAsync(refreshTokenPayload, {
-      secret: this.configService.get('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION') || '30d',
+      secret: this.configService.get("JWT_REFRESH_SECRET"),
+      expiresIn: this.configService.get("JWT_REFRESH_EXPIRATION") || "30d",
     });
 
     return { accessToken, refreshToken };
@@ -286,21 +298,26 @@ export class AuthService {
 
   private setTokenCookies(
     response: Response,
-    tokens: { accessToken: string; refreshToken: string },
+    tokens: { accessToken: string; refreshToken: string }
   ) {
-    // Set access token cookie (7 days)
-    response.cookie('access_token', tokens.accessToken, {
+    const isProduction = process.env.NODE_ENV === "production";
+
+    const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProduction,
+      sameSite: isProduction ? "strict" : ("lax" as const), // 'lax' for cross-port dev
+      path: "/",
+    };
+
+    // Set access token cookie (7 days)
+    response.cookie("access_token", tokens.accessToken, {
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     // Set refresh token cookie (30 days)
-    response.cookie('refresh_token', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+    response.cookie("refresh_token", tokens.refreshToken, {
+      ...cookieOptions,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
   }
