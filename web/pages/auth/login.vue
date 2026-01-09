@@ -163,7 +163,7 @@ const handleLogin = async () => {
   error.value = ''
   
   try {
-    const response = await authStore.login(form.value)
+    await authStore.login(form.value)
     
     // Handle 'Remember Me'
     if (rememberMe.value) {
@@ -172,12 +172,15 @@ const handleLogin = async () => {
       localStorage.removeItem('journal_remember_email')
     }
 
-    // Redirect based on response
-    if (response?.needsCompany) {
-      router.push('/companies')
-    } else if (response?.company) {
-      router.push(`/${response.company.slug}/dashboard`)
+    // Fetch user's companies to determine redirect
+    const { $api } = useNuxtApp()
+    const companies = await $api<any[]>('/companies')
+
+    if (companies && companies.length === 1) {
+      // Single company - go directly to dashboard
+      router.push(`/${companies[0].slug}/dashboard`)
     } else {
+      // No companies or multiple - show company selection
       router.push('/companies')
     }
   } catch (e: any) {
