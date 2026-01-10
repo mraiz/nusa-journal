@@ -4,9 +4,9 @@ import {
   NotFoundException,
   Logger,
   ForbiddenException,
-} from '@nestjs/common';
-import { TenantPrismaService } from '../tenancy/tenant-prisma.service';
-import { CreatePeriodDto } from './dto/create-period.dto';
+} from "@nestjs/common";
+import { TenantPrismaService } from "../tenancy/tenant-prisma.service";
+import { CreatePeriodDto } from "./dto/create-period.dto";
 
 @Injectable()
 export class PeriodService {
@@ -20,7 +20,7 @@ export class PeriodService {
   async createPeriod(dto: CreatePeriodDto) {
     const company = await this.tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     // Validate dates
@@ -31,7 +31,7 @@ export class PeriodService {
     endDate.setHours(23, 59, 59, 999);
 
     if (startDate >= endDate) {
-      throw new BadRequestException('Start date must be before end date');
+      throw new BadRequestException("Start date must be before end date");
     }
 
     // Check for overlapping periods
@@ -60,40 +60,52 @@ export class PeriodService {
 
     if (overlapping) {
       throw new BadRequestException(
-        `Period overlaps with existing period: ${overlapping.name} (${overlapping.startDate.toISOString().split('T')[0]} - ${overlapping.endDate.toISOString().split('T')[0]})`
+        `Period overlaps with existing period: ${overlapping.name} (${overlapping.startDate.toISOString().split("T")[0]} - ${overlapping.endDate.toISOString().split("T")[0]})`
       );
     }
 
     // Create period (default status: OPEN)
-    const period = await this.tenantPrisma.accountingPeriod.create({
-      data: {
-        companyId: company.id,
-        name: dto.name,
-        startDate,
-        endDate,
-        status: 'OPEN',
-      },
-    });
+    try {
+      const period = await this.tenantPrisma.accountingPeriod.create({
+        data: {
+          companyId: company.id,
+          name: dto.name,
+          startDate,
+          endDate,
+          status: "OPEN",
+        },
+      });
 
-    this.logger.log(`Period created: ${period.name} (${period.startDate.toISOString().split('T')[0]} - ${period.endDate.toISOString().split('T')[0]})`);
+      this.logger.log(
+        `Period created: ${period.name} (${period.startDate.toISOString().split("T")[0]} - ${period.endDate.toISOString().split("T")[0]})`
+      );
 
-    return {
-      id: period.id,
-      name: period.name,
-      startDate: period.startDate,
-      endDate: period.endDate,
-      status: period.status,
-      createdAt: period.createdAt,
-    };
+      return {
+        id: period.id,
+        name: period.name,
+        startDate: period.startDate,
+        endDate: period.endDate,
+        status: period.status,
+        createdAt: period.createdAt,
+      };
+    } catch (error: any) {
+      // Handle unique constraint violation (duplicate period name)
+      if (error.code === "P2002") {
+        throw new BadRequestException(
+          `Periode dengan nama "${dto.name}" sudah ada. Gunakan nama yang berbeda.`
+        );
+      }
+      throw error;
+    }
   }
 
   /**
    * Get all periods
    */
-  async getPeriods(query?: import('./dto/get-periods.dto').GetPeriodsDto) {
+  async getPeriods(query?: import("./dto/get-periods.dto").GetPeriodsDto) {
     const company = await this.tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     const where: any = {
@@ -104,7 +116,7 @@ export class PeriodService {
       const year = parseInt(query.year);
       const startOfYear = new Date(year, 0, 1);
       const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
-      
+
       where.startDate = {
         gte: startOfYear,
         lte: endOfYear,
@@ -121,11 +133,11 @@ export class PeriodService {
         },
       },
       orderBy: {
-        startDate: 'desc',
+        startDate: "desc",
       },
     });
 
-    return periods.map(period => ({
+    return periods.map((period) => ({
       id: period.id,
       name: period.name,
       startDate: period.startDate,
@@ -157,7 +169,7 @@ export class PeriodService {
             description: true,
           },
           orderBy: {
-            date: 'desc',
+            date: "desc",
           },
           take: 10, // Last 10 journals
         },
@@ -165,7 +177,7 @@ export class PeriodService {
     });
 
     if (!period) {
-      throw new NotFoundException('Period not found');
+      throw new NotFoundException("Period not found");
     }
 
     return {
@@ -197,11 +209,11 @@ export class PeriodService {
     });
 
     if (!period) {
-      throw new NotFoundException('Period not found');
+      throw new NotFoundException("Period not found");
     }
 
-    if (period.status === 'CLOSED') {
-      throw new BadRequestException('Period is already closed');
+    if (period.status === "CLOSED") {
+      throw new BadRequestException("Period is already closed");
     }
 
     // TODO: Future enhancement - Validate trial balance is balanced before closing
@@ -210,18 +222,21 @@ export class PeriodService {
     const updated = await this.tenantPrisma.accountingPeriod.update({
       where: { id },
       data: {
-        status: 'CLOSED',
+        status: "CLOSED",
       },
     });
 
-    this.logger.log(`Period closed: ${updated.name} (${period._count.journals} journals)`);
+    this.logger.log(
+      `Period closed: ${updated.name} (${period._count.journals} journals)`
+    );
 
     return {
       id: updated.id,
       name: updated.name,
       status: updated.status,
       journalCount: period._count.journals,
-      message: 'Period closed successfully. No new journals can be posted to this period.',
+      message:
+        "Period closed successfully. No new journals can be posted to this period.",
     };
   }
 
@@ -234,18 +249,18 @@ export class PeriodService {
     });
 
     if (!period) {
-      throw new NotFoundException('Period not found');
+      throw new NotFoundException("Period not found");
     }
 
-    if (period.status === 'OPEN') {
-      throw new BadRequestException('Period is already open');
+    if (period.status === "OPEN") {
+      throw new BadRequestException("Period is already open");
     }
 
     // Reopen period
     const updated = await this.tenantPrisma.accountingPeriod.update({
       where: { id },
       data: {
-        status: 'OPEN',
+        status: "OPEN",
       },
     });
 
@@ -255,7 +270,7 @@ export class PeriodService {
       id: updated.id,
       name: updated.name,
       status: updated.status,
-      message: 'Period reopened successfully. Journals can now be posted.',
+      message: "Period reopened successfully. Journals can now be posted.",
     };
   }
 
@@ -275,7 +290,7 @@ export class PeriodService {
     });
 
     if (!period) {
-      throw new NotFoundException('Period not found');
+      throw new NotFoundException("Period not found");
     }
 
     if (period._count.journals > 0) {
@@ -291,7 +306,7 @@ export class PeriodService {
     this.logger.log(`Period deleted: ${period.name}`);
 
     return {
-      message: 'Period deleted successfully',
+      message: "Period deleted successfully",
     };
   }
 }
