@@ -346,6 +346,8 @@ onMounted(async () => {
 })
 
 // Save Account Settings
+const toast = useToast()
+
 const saveAccountSettings = async () => {
   savingAccounts.value = true
   try {
@@ -353,9 +355,9 @@ const saveAccountSettings = async () => {
       method: 'PATCH',
       body: accountSettings
     })
-    alert('Pengaturan akun berhasil disimpan!')
+    toast.success('Berhasil', 'Pengaturan akun berhasil disimpan!')
   } catch (err: any) {
-    alert(err.message || 'Gagal menyimpan pengaturan')
+    toast.apiError(err, 'Gagal Menyimpan Pengaturan')
   } finally {
     savingAccounts.value = false
   }
@@ -367,11 +369,11 @@ const submitInvite = async () => {
   
   try {
     await companyStore.inviteUser(companyStore.currentCompany.slug, inviteForm.email, inviteForm.role)
-    alert('Berhasil memproses anggota!')
+    toast.success('Berhasil', 'Undangan berhasil dikirim!')
     showInviteModal.value = false
     inviteForm.email = ''
   } catch (e: any) {
-    alert('Gagal: ' + e.message)
+    toast.apiError(e, 'Gagal Mengundang')
   }
 }
 
@@ -396,10 +398,10 @@ const submitEdit = async () => {
   if (!companyStore.currentCompany) return
   try {
     await companyStore.updateUser(companyStore.currentCompany.slug, editForm.userId, editForm.role)
-    alert('Role user berhasil diperbarui!')
+    toast.success('Berhasil', 'Role user berhasil diperbarui!')
     showEditModal.value = false
   } catch (e: any) {
-    alert('Gagal update role: ' + e.message)
+    toast.apiError(e, 'Gagal Update Role')
   }
 }
 
@@ -422,10 +424,10 @@ const submitApprove = async () => {
    if (!companyStore.currentCompany) return
    try {
       await companyStore.approveUser(companyStore.currentCompany.slug, approveForm.userId, approveForm.role)
-      alert('User berhasil disetujui dan aktif!')
+      toast.success('Berhasil', 'User berhasil disetujui dan aktif!')
       showApproveModal.value = false
    } catch (e: any) {
-      alert('Gagal menyetujui user: ' + e.message)
+      toast.apiError(e, 'Gagal Menyetujui User')
    }
 }
 
@@ -435,8 +437,9 @@ const confirmRemove = async (member: any) => {
   if (confirm(`Yakin ingin menghapus akses user ${member.name}?`)) {
     try {
       await companyStore.removeUser(companyStore.currentCompany.slug, member.userId)
+      toast.success('Berhasil', 'User berhasil dihapus')
     } catch (e: any) {
-      alert('Gagal menghapus user: ' + e.message)
+      toast.apiError(e, 'Gagal Menghapus User')
     }
   }
 }

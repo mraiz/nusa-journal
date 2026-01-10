@@ -302,10 +302,15 @@ export class AuthService {
   ) {
     const isProduction = process.env.NODE_ENV === "production";
 
-    const cookieOptions = {
+    const cookieOptions: {
+      httpOnly: boolean;
+      secure: boolean;
+      sameSite: "strict" | "lax" | "none";
+      path: string;
+    } = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? "strict" : ("lax" as const), // 'lax' for cross-port dev
+      sameSite: isProduction ? "strict" : "lax",
       path: "/",
     };
 
