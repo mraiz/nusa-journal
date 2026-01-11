@@ -132,7 +132,7 @@
       </header>
 
       <!-- Page Content -->
-      <div class="p-6 md:p-8 max-w-7xl mx-auto">
+      <div class="p-4 md:p-8 max-w-7xl mx-auto">
         <slot />
       </div>
     </main>

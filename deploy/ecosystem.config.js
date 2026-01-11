@@ -11,9 +11,9 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3100,
         DATABASE_URL:
-          "postgresql://nusawork:nu54n3t2022%21@127.0.0.1:5432/nusa_journal_app?schema=public",
+          "postgresql://nusawork:nu54n3t2022!@127.0.0.1:5432/nusa_journal_app?schema=public",
         REGISTRY_DATABASE_URL:
-          "postgresql://nusawork:nu54n3t2022%21@127.0.0.1:5432/nusa_journal_registry?schema=public",
+          "postgresql://nusawork:nu54n3t2022!@127.0.0.1:5432/nusa_journal_registry?schema=public",
         TENANT_DB_HOST: "127.0.0.1",
         TENANT_DB_PORT: "5432",
         TENANT_DB_USER: "nusawork",

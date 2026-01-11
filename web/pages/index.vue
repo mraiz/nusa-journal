@@ -295,14 +295,24 @@
 
       <!-- CTA Section -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div class="glass-card p-10 text-center bg-gradient-to-r from-primary-50 to-accent-50">
+        <div
+          class="glass-card p-6 md:p-10 text-center bg-gradient-to-r from-primary-50 to-accent-50"
+        >
           <h2 class="text-3xl font-bold text-gradient-primary mb-4">Siap Memulai?</h2>
           <p class="text-neutral-600 mb-6 max-w-2xl mx-auto">
             Mulai kelola keuangan bisnis Anda dengan lebih profesional dan terstruktur.
           </p>
-          <NuxtLink to="/auth/register" class="btn btn-primary text-lg px-10 py-3">
-            Daftar Sekarang — Gratis
-            <svg class="w-5 h-5 ml-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <NuxtLink
+            to="/auth/register"
+            class="btn btn-primary text-sm sm:text-lg px-4 sm:px-10 py-3 w-full sm:w-auto justify-center"
+          >
+            <span class="truncate">Daftar Sekarang — Gratis</span>
+            <svg
+              class="w-5 h-5 ml-2 inline flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
