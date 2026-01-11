@@ -1,6 +1,6 @@
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
-  
+
   // on server, we need to pass cookies
   const headers = useRequestHeaders(['cookie'])
 
@@ -9,9 +9,9 @@ export default defineNuxtPlugin((nuxtApp) => {
     baseURL: config.public.apiBase,
     credentials: 'include',
     headers: {
-      'Accept': 'application/json',
-      ...headers
-    }
+      Accept: 'application/json',
+      ...headers,
+    },
   })
 
   // Wrapper function to handle 401 and retry
@@ -19,25 +19,29 @@ export default defineNuxtPlugin((nuxtApp) => {
     try {
       return await apiFetcher(url, options)
     } catch (error: any) {
-      // If 401 and not already retrying
-      if (error.response?.status === 401 && !options._retry) {
+      // Don't retry auth endpoints to prevent infinite loops
+      const isAuthEndpoint = url.includes('/auth/')
+
+      // If 401 and not an auth endpoint and not already retrying
+      if (error.response?.status === 401 && !isAuthEndpoint && !options._retry) {
         options._retry = true
-        
+
         try {
           // Try to refresh token
-          // meaningful only if we have http-only cookies for refresh token
           await apiFetcher('/auth/refresh', { method: 'POST' })
-          
-          // Retry original request (recursively calling api, but with _retry flag)
+
+          // Retry original request
           return await api(url, options)
         } catch (refreshError) {
-          // Refresh failed, so we really are unauthorized
+          // Refresh failed, clear local state and redirect
           const authStore = useAuthStore()
-          authStore.logout() // This redirects to login
+          authStore.user = null
+          authStore.isAuthenticated = false
+          navigateTo('/auth/login')
           throw refreshError
         }
       }
-      
+
       throw error
     }
   }
@@ -45,7 +49,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   // Expose to useNuxtApp().$api
   return {
     provide: {
-      api
-    }
+      api,
+    },
   }
 })

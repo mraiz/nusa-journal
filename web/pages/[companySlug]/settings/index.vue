@@ -311,13 +311,7 @@ const isAdmin = computed(() => {
   return false
 })
 
-onMounted(async () => {
-  const slug = route.params.companySlug as string
-  if (slug) {
-    // Always fetch users when entering settings
-    companyStore.fetchCompanyUsers(slug)
-    
-    // Fetch accounts for settings tab
+  const fetchSettingsAccounts = async () => {
     accountsLoading.value = true
     try {
       const accRes = await accountStore.fetchAccounts(slug, { limit: 500 })
@@ -327,14 +321,10 @@ onMounted(async () => {
         allAccounts.value = accRes
       }
       
-      // Also fetch current company settings
       const companyData = await authStore.fetchWithAuth(`/${slug}/company`)
-      
-      // Ensure store has current company data so isAdmin works
       if (!companyStore.currentCompany) {
           companyStore.currentCompany = companyData
       }
-
       accountSettings.accountsReceivableId = companyData.accountsReceivableId || ''
       accountSettings.accountsPayableId = companyData.accountsPayableId || ''
     } catch (err) {
@@ -343,7 +333,22 @@ onMounted(async () => {
       accountsLoading.value = false
     }
   }
-})
+
+  watch(activeTab, (val) => {
+    if (val === 'accounts') {
+      fetchSettingsAccounts()
+    }
+  })
+
+  onMounted(async () => {
+    if (slug) {
+      companyStore.fetchCompanyUsers(slug)
+      // Initial fetch if starting on accounts tab
+      if (activeTab.value === 'accounts') {
+        fetchSettingsAccounts()
+      }
+    }
+  })
 
 // Save Account Settings
 const toast = useToast()

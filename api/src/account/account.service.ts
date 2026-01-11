@@ -4,11 +4,11 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
-} from '@nestjs/common';
-import { TenantPrismaService } from '../tenancy/tenant-prisma.service';
-import { CreateAccountDto } from './dto/create-account.dto';
-import { UpdateAccountDto } from './dto/update-account.dto';
-import { AccountType } from '@prisma/client';
+} from "@nestjs/common";
+import { TenantPrismaService } from "../tenancy/tenant-prisma.service";
+import { CreateAccountDto } from "./dto/create-account.dto";
+import { UpdateAccountDto } from "./dto/update-account.dto";
+import { AccountType } from "@prisma/client";
 
 @Injectable()
 export class AccountService {
@@ -22,7 +22,7 @@ export class AccountService {
   async createAccount(dto: CreateAccountDto) {
     const company = await this.tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     // Check if account code already exists
@@ -34,7 +34,9 @@ export class AccountService {
     });
 
     if (existing) {
-      throw new ConflictException(`Account with code '${dto.code}' already exists`);
+      throw new ConflictException(
+        `Account with code '${dto.code}' already exists`
+      );
     }
 
     // Validate parent account if provided
@@ -44,7 +46,7 @@ export class AccountService {
       });
 
       if (!parent) {
-        throw new NotFoundException('Parent account not found');
+        throw new NotFoundException("Parent account not found");
       }
 
       // Validate parent account type matches child
@@ -56,7 +58,9 @@ export class AccountService {
 
       // Prevent creating child under locked parent
       if (parent.isLocked) {
-        throw new BadRequestException('Cannot create account under locked parent');
+        throw new BadRequestException(
+          "Cannot create account under locked parent"
+        );
       }
     }
 
@@ -88,11 +92,13 @@ export class AccountService {
       name: account.name,
       type: account.type,
       parentId: account.parentId,
-      parent: account.parent ? {
-        id: account.parent.id,
-        code: account.parent.code,
-        name: account.parent.name,
-      } : null,
+      parent: account.parent
+        ? {
+            id: account.parent.id,
+            code: account.parent.code,
+            name: account.parent.name,
+          }
+        : null,
       classification: account.classification,
       isPosting: account.isPosting,
       isLocked: account.isLocked,
@@ -107,25 +113,25 @@ export class AccountService {
   /**
    * Get all accounts with hierarchy (Paged)
    */
-  async getAccounts(query: import('./dto/get-accounts.dto').GetAccountsDto) {
+  async getAccounts(query: import("./dto/get-accounts.dto").GetAccountsDto) {
     const company = await this.tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     const { page = 1, limit = 10, search, type } = query;
     const skip = (page - 1) * limit;
 
     const where: any = { companyId: company.id };
-    
+
     if (type) {
       where.type = type;
     }
 
     if (search) {
       where.OR = [
-        { code: { contains: search, mode: 'insensitive' } },
-        { name: { contains: search, mode: 'insensitive' } },
+        { code: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -147,15 +153,12 @@ export class AccountService {
           select: { children: true },
         },
       },
-      orderBy: [
-        { type: 'asc' },
-        { code: 'asc' },
-      ],
+      orderBy: [{ type: "asc" }, { code: "asc" }],
       skip,
       take: Number(limit),
     });
 
-    const data = accounts.map(account => ({
+    const data = accounts.map((account) => ({
       id: account.id,
       code: account.code,
       name: account.name,
@@ -189,7 +192,7 @@ export class AccountService {
       include: {
         parent: true,
         children: {
-          orderBy: { code: 'asc' },
+          orderBy: { code: "asc" },
         },
         _count: {
           select: {
@@ -201,7 +204,7 @@ export class AccountService {
     });
 
     if (!account) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException("Account not found");
     }
 
     // Build hierarchy path
@@ -216,12 +219,14 @@ export class AccountService {
       description: account.description,
       isPosting: account.isPosting,
       parentId: account.parentId,
-      parent: account.parent ? {
-        id: account.parent.id,
-        code: account.parent.code,
-        name: account.parent.name,
-      } : null,
-      children: account.children.map(child => ({
+      parent: account.parent
+        ? {
+            id: account.parent.id,
+            code: account.parent.code,
+            name: account.parent.name,
+          }
+        : null,
+      children: account.children.map((child) => ({
         id: child.id,
         code: child.code,
         name: child.name,
@@ -246,11 +251,11 @@ export class AccountService {
     });
 
     if (!account) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException("Account not found");
     }
 
     if (account.isLocked) {
-      throw new BadRequestException('Cannot update locked account');
+      throw new BadRequestException("Cannot update locked account");
     }
 
     if (dto.code && dto.code !== account.code) {
@@ -262,7 +267,33 @@ export class AccountService {
       });
 
       if (existing) {
-        throw new ConflictException(`Account with code '${dto.code}' already exists`);
+        throw new ConflictException(
+          `Account with code '${dto.code}' already exists`
+        );
+      }
+    }
+
+    if (dto.type && dto.type !== account.type) {
+      // 1. Check parent consistency
+      if (account.parentId) {
+        const parent = await this.tenantPrisma.account.findUnique({
+          where: { id: account.parentId },
+        });
+        if (parent && parent.type !== dto.type) {
+          throw new BadRequestException(
+            `Account type must match parent account type (${parent.type})`
+          );
+        }
+      }
+
+      // 2. Check children consistency (prevent changing type if children exist)
+      const childrenCount = await this.tenantPrisma.account.count({
+        where: { parentId: id },
+      });
+      if (childrenCount > 0) {
+        throw new BadRequestException(
+          "Cannot change type of account that has children accounts"
+        );
       }
     }
 
@@ -272,6 +303,7 @@ export class AccountService {
         code: dto.code,
         name: dto.name,
         description: dto.description,
+        type: dto.type, // Enabled type update
         classification: dto.classification,
         isPosting: dto.isPosting,
       },
@@ -306,11 +338,11 @@ export class AccountService {
     });
 
     if (!account) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException("Account not found");
     }
 
     if (account.isLocked) {
-      throw new BadRequestException('Account is already locked');
+      throw new BadRequestException("Account is already locked");
     }
 
     // Lock account
@@ -326,7 +358,7 @@ export class AccountService {
       code: locked.code,
       name: locked.name,
       isLocked: locked.isLocked,
-      message: 'Account locked successfully',
+      message: "Account locked successfully",
     };
   }
 
@@ -339,11 +371,11 @@ export class AccountService {
     });
 
     if (!account) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException("Account not found");
     }
 
     if (!account.isLocked) {
-      throw new BadRequestException('Account is not locked');
+      throw new BadRequestException("Account is not locked");
     }
 
     const unlocked = await this.tenantPrisma.account.update({
@@ -358,7 +390,7 @@ export class AccountService {
       code: unlocked.code,
       name: unlocked.name,
       isLocked: unlocked.isLocked,
-      message: 'Account unlocked successfully',
+      message: "Account unlocked successfully",
     };
   }
 
@@ -375,17 +407,21 @@ export class AccountService {
     });
 
     if (!account) {
-      throw new NotFoundException('Account not found');
+      throw new NotFoundException("Account not found");
     }
 
     // Check if account has journal entries
     if (account.journalLines && account.journalLines.length > 0) {
-      throw new BadRequestException('Cannot delete account with journal entries. Consider locking it instead.');
+      throw new BadRequestException(
+        "Cannot delete account with journal entries. Consider locking it instead."
+      );
     }
 
     // Check if account has children
     if (account.children && account.children.length > 0) {
-      throw new BadRequestException('Cannot delete account with child accounts. Delete children first.');
+      throw new BadRequestException(
+        "Cannot delete account with child accounts. Delete children first."
+      );
     }
 
     await this.tenantPrisma.account.delete({
@@ -398,7 +434,7 @@ export class AccountService {
       id: account.id,
       code: account.code,
       name: account.name,
-      message: 'Account deleted successfully',
+      message: "Account deleted successfully",
     };
   }
 
@@ -408,7 +444,7 @@ export class AccountService {
   async getAccountTree(type?: AccountType) {
     const company = await this.tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     const where: any = { companyId: company.id };
@@ -429,11 +465,11 @@ export class AccountService {
           },
         },
       },
-      orderBy: { code: 'asc' },
+      orderBy: { code: "asc" },
     });
 
     // Filter to get only root accounts (no parent)
-    const rootAccounts = accounts.filter(a => !a.parentId);
+    const rootAccounts = accounts.filter((a) => !a.parentId);
 
     return this.buildTree(rootAccounts);
   }
@@ -446,11 +482,14 @@ export class AccountService {
     let currentId: string | null = accountId;
 
     while (currentId) {
-      const account: { code: string; name: string; parentId: string | null } | null = 
-        await this.tenantPrisma.account.findUnique({
-          where: { id: currentId },
-          select: { code: true, name: true, parentId: true },
-        });
+      const account: {
+        code: string;
+        name: string;
+        parentId: string | null;
+      } | null = await this.tenantPrisma.account.findUnique({
+        where: { id: currentId },
+        select: { code: true, name: true, parentId: true },
+      });
 
       if (!account) break;
 
@@ -465,7 +504,7 @@ export class AccountService {
    * Build tree structure recursively
    */
   private buildTree(accounts: any[]): any[] {
-    return accounts.map(account => ({
+    return accounts.map((account) => ({
       id: account.id,
       code: account.code,
       name: account.name,

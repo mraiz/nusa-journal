@@ -16,8 +16,11 @@ export const useContactStore = defineStore('contact', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/customers`, { query: params })
-      customers.value = response.data
+      const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/customers`, {
+        query: params,
+      })
+      // Handle { data: [], meta: ... } or []
+      customers.value = Array.isArray(response) ? response : response.data || []
       return response
     } catch (err: any) {
       error.value = err.message
@@ -30,12 +33,15 @@ export const useContactStore = defineStore('contact', () => {
   async function createCustomer(payload: CreateCustomerDto) {
     loading.value = true
     try {
-      const { data } = await authStore.fetchWithAuth(`/${route.params.companySlug}/customers`, {
+      const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/customers`, {
         method: 'POST',
-        body: payload
+        body: payload,
       })
-      customers.value.push(data)
-      return data
+      const newItem = response.data || response
+      if (newItem && customers.value) {
+        customers.value.push(newItem)
+      }
+      return newItem
     } catch (err: any) {
       throw err
     } finally {
@@ -44,32 +50,43 @@ export const useContactStore = defineStore('contact', () => {
   }
 
   async function updateCustomer(id: string, payload: Partial<CreateCustomerDto>) {
-      loading.value = true;
-      try {
-          const { data } = await authStore.fetchWithAuth(`/${route.params.companySlug}/customers/${id}`, {
-              method: 'PATCH',
-              body: payload
-          })
-          const index = customers.value.findIndex(c => c.id === id)
-          if (index !== -1) customers.value[index] = data
-          return data
-      } catch(err: any) {
-          throw err
-      } finally {
-          loading.value = false
+    loading.value = true
+    try {
+      const response = await authStore.fetchWithAuth(
+        `/${route.params.companySlug}/customers/${id}`,
+        {
+          method: 'PATCH',
+          body: payload,
+        }
+      )
+      const updatedItem = response.data || response
+
+      if (customers.value) {
+        const index = customers.value.findIndex((c) => c.id === id)
+        if (index !== -1) customers.value[index] = updatedItem
       }
+      return updatedItem
+    } catch (err: any) {
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   async function deleteCustomer(id: string) {
-      loading.value = true
-      try {
-          await authStore.fetchWithAuth(`/${route.params.companySlug}/customers/${id}`, { method: 'DELETE' })
-          customers.value = customers.value.filter(c => c.id !== id)
-      } catch(err: any) {
-          throw err
-      } finally {
-          loading.value = false
+    loading.value = true
+    try {
+      await authStore.fetchWithAuth(`/${route.params.companySlug}/customers/${id}`, {
+        method: 'DELETE',
+      })
+      if (customers.value) {
+        customers.value = customers.value.filter((c) => c.id !== id)
       }
+    } catch (err: any) {
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   // -- Vendors --
@@ -77,8 +94,10 @@ export const useContactStore = defineStore('contact', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/vendors`, { query: params })
-      vendors.value = response.data
+      const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/vendors`, {
+        query: params,
+      })
+      vendors.value = Array.isArray(response) ? response : response.data || []
       return response
     } catch (err: any) {
       error.value = err.message
@@ -91,46 +110,56 @@ export const useContactStore = defineStore('contact', () => {
   async function createVendor(payload: CreateVendorDto) {
     loading.value = true
     try {
-        const { data } = await authStore.fetchWithAuth(`/${route.params.companySlug}/vendors`, {
-          method: 'POST',
-          body: payload
-        })
-        vendors.value.push(data)
-        return data
-      } catch (err: any) {
-        throw err
-      } finally {
-        loading.value = false
+      const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/vendors`, {
+        method: 'POST',
+        body: payload,
+      })
+      const newItem = response.data || response
+      if (newItem && vendors.value) {
+        vendors.value.push(newItem)
       }
+      return newItem
+    } catch (err: any) {
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   async function updateVendor(id: string, payload: Partial<CreateVendorDto>) {
-      loading.value = true
-      try {
-          const { data } = await authStore.fetchWithAuth(`/${route.params.companySlug}/vendors/${id}`, {
-              method: 'PATCH',
-              body: payload
-          })
-          const index = vendors.value.findIndex(v => v.id === id)
-          if (index !== -1) vendors.value[index] = data
-          return data
-      } catch(err: any) {
-          throw err
-      } finally {
-          loading.value = false
+    loading.value = true
+    try {
+      const response = await authStore.fetchWithAuth(`/${route.params.companySlug}/vendors/${id}`, {
+        method: 'PATCH',
+        body: payload,
+      })
+      const updatedItem = response.data || response
+      if (vendors.value) {
+        const index = vendors.value.findIndex((v) => v.id === id)
+        if (index !== -1) vendors.value[index] = updatedItem
       }
+      return updatedItem
+    } catch (err: any) {
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   async function deleteVendor(id: string) {
-      loading.value = true
-      try {
-          await authStore.fetchWithAuth(`/${route.params.companySlug}/vendors/${id}`, { method: 'DELETE' })
-          vendors.value = vendors.value.filter(v => v.id !== id)
-      } catch(err: any) {
-          throw err
-      } finally {
-          loading.value = false
+    loading.value = true
+    try {
+      await authStore.fetchWithAuth(`/${route.params.companySlug}/vendors/${id}`, {
+        method: 'DELETE',
+      })
+      if (vendors.value) {
+        vendors.value = vendors.value.filter((v) => v.id !== id)
       }
+    } catch (err: any) {
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
   return {
@@ -145,6 +174,6 @@ export const useContactStore = defineStore('contact', () => {
     fetchVendors,
     createVendor,
     updateVendor,
-    deleteVendor
+    deleteVendor,
   }
 })

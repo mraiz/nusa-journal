@@ -1,0 +1,53 @@
+module.exports = {
+  apps: [
+    {
+      name: "nusa-journal-api",
+      cwd: "/var/www/nusa-journal/api",
+      script: "dist/main.js",
+      interpreter: "/home/ade/.nvm/versions/node/v20.19.4/bin/node",
+      instances: 1,
+      exec_mode: "fork",
+      env: {
+        NODE_ENV: "production",
+        PORT: 3100,
+        DATABASE_URL:
+          "postgresql://nusawork:nusajournal2026@localhost:5432/nusa_journal?schema=public",
+        REGISTRY_DATABASE_URL:
+          "postgresql://nusawork:nusajournal2026@localhost:5432/nusa_journal_registry?schema=public",
+        TENANT_DB_HOST: "localhost",
+        TENANT_DB_PORT: "5432",
+        TENANT_DB_USER: "nusawork",
+        TENANT_DB_PASSWORD: "nusajournal2026",
+        JWT_ACCESS_SECRET: "nusa-journal-jwt-secret-production-2026",
+        JWT_REFRESH_SECRET: "nusa-journal-refresh-secret-production-2026",
+        JWT_EXPIRATION: "7d",
+        JWT_REFRESH_EXPIRATION: "30d",
+        ENCRYPTION_KEY: "nusajournalenckey2026devprodkey1",
+        FRONTEND_URL: "https://journal.app.dev.nusa.work",
+      },
+      error_file: "/var/www/nusa-journal/logs/api-error.log",
+      out_file: "/var/www/nusa-journal/logs/api-out.log",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      max_memory_restart: "500M",
+    },
+    {
+      name: "nusa-journal-web",
+      cwd: "/var/www/nusa-journal/web",
+      script: ".output/server/index.mjs",
+      interpreter: "/home/ade/.nvm/versions/node/v20.19.4/bin/node",
+      instances: 1,
+      exec_mode: "fork",
+      env: {
+        NODE_ENV: "production",
+        PORT: 3101,
+        HOST: "0.0.0.0",
+        NITRO_PORT: 3101,
+        NUXT_PUBLIC_API_BASE: "https://journal.app.dev.nusa.work/api",
+      },
+      error_file: "/var/www/nusa-journal/logs/web-error.log",
+      out_file: "/var/www/nusa-journal/logs/web-out.log",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+      max_memory_restart: "500M",
+    },
+  ],
+};
