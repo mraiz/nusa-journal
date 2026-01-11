@@ -16,7 +16,11 @@
         >
           <span class="text-lg">📊</span> {{ exportLoading ? 'Exporting...' : 'Export Excel' }}
         </button>
-        <button class="btn btn-primary flex items-center gap-2" @click="openCreateModal">
+        <button
+          id="btn-add-account"
+          class="btn btn-primary flex items-center gap-2"
+          @click="openCreateModal"
+        >
           <span class="text-lg">➕</span> Akun Baru
         </button>
       </div>

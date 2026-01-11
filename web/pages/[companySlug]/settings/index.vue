@@ -18,6 +18,7 @@
         🏢 Umum
       </button>
       <button 
+        id="tab-accounts"
         class="px-6 py-3 text-sm font-medium border-b-2 transition-colors"
         :class="activeTab === 'accounts' ? 'border-primary-500 text-primary-700' : 'border-transparent text-neutral-500 hover:text-neutral-700'"
         @click="activeTab = 'accounts'"

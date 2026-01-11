@@ -2,11 +2,11 @@
   <div class="min-h-screen bg-slate-50 flex">
     <!-- Sidebar -->
     <aside
-      class="fixed inset-y-0 left-0 w-64 bg-white/80 backdrop-blur-xl border-r border-neutral-200 z-30 transition-transform duration-300 lg:translate-x-0 print:hidden"
+      class="fixed inset-y-0 left-0 w-64 bg-white/80 backdrop-blur-xl border-r border-neutral-200 z-30 transition-transform duration-300 lg:translate-x-0 print:hidden flex flex-col"
       :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
       <!-- Logo -->
-      <div class="h-16 flex items-center px-6 border-b border-neutral-100">
+      <div id="tour-welcome" class="h-16 flex items-center px-6 border-b border-neutral-100">
         <div class="flex items-center gap-3">
           <div
             class="w-8 h-8 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-soft"
@@ -44,7 +44,7 @@
       </div>
 
       <!-- Navigation -->
-      <nav class="p-4 space-y-1 overflow-y-auto h-[calc(100vh-180px)] pb-[60px]">
+      <nav id="sidebar-nav" class="flex-1 p-4 space-y-1 overflow-y-auto overscroll-contain">
         <div v-for="(group, index) in menuGroups" :key="index" class="mb-6">
           <h3 class="px-3 text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">
             {{ group.title }}
@@ -56,6 +56,7 @@
               :to="`/${route.params.companySlug}${item.path}`"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group"
               active-class="bg-primary-50 text-primary-700 shadow-sm"
+              :id="`menu-${item.path.replace('/', '') || 'dashboard'}`"
               :class="
                 $route.path.includes(item.path) && item.path !== ''
                   ? 'bg-primary-50 text-primary-700 shadow-sm'
@@ -72,9 +73,7 @@
       </nav>
 
       <!-- User Profile -->
-      <div
-        class="absolute bottom-0 left-0 w-full p-4 border-t border-neutral-100 bg-white/50 backdrop-blur-sm"
-      >
+      <div class="flex-shrink-0 p-4 border-t border-neutral-100 bg-white/80 backdrop-blur-sm">
         <div class="flex items-center gap-3">
           <div
             class="w-9 h-9 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-600 font-bold overflow-hidden"
@@ -86,19 +85,36 @@
             <p class="text-sm font-medium text-neutral-800 truncate">{{ user?.name }}</p>
             <p class="text-xs text-neutral-500 truncate">{{ user?.email }}</p>
           </div>
-          <button
-            @click="handleLogout"
-            class="text-neutral-400 hover:text-red-500 transition-colors"
-          >
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-          </button>
+          <div class="flex items-center gap-1">
+            <button
+              @click="tour.startTour()"
+              class="text-neutral-400 hover:text-primary-600 transition-colors p-1"
+              title="Start Product Tour"
+            >
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </button>
+            <button
+              @click="handleLogout"
+              class="text-neutral-400 hover:text-red-500 transition-colors p-1"
+              title="Logout"
+            >
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </aside>
@@ -144,6 +160,7 @@
   const router = useRouter()
   const authStore = useAuthStore()
   const companyStore = useCompanyStore()
+  const tour = useProductTour()
 
   const isSidebarOpen = ref(false)
   const user = computed(() => authStore.user)

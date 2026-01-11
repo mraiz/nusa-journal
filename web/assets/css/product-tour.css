@@ -1,0 +1,175 @@
+/* Custom Driver.js Styling for Nusa Journal Product Tour */
+
+/* Overlay */
+.driver-overlay {
+  background: rgb(15 23 42 / 3%) !important;
+}
+
+/* Popover Container */
+.driver-popover {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  padding: 0 !important;
+  overflow: hidden;
+  max-width: 340px !important;
+}
+
+/* Popover Arrow */
+.driver-popover-arrow {
+  border: none !important;
+}
+
+.driver-popover-arrow-side-left,
+.driver-popover-arrow-side-right,
+.driver-popover-arrow-side-top,
+.driver-popover-arrow-side-bottom {
+  background: transparent !important;
+}
+
+/* Title */
+.driver-popover-title {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  padding: 20px 20px 8px 20px !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* Description */
+.driver-popover-description {
+  font-size: 0.875rem !important;
+  color: #64748b !important;
+  padding: 0 20px 16px 20px !important;
+  margin: 0 !important;
+  line-height: 1.6 !important;
+}
+
+/* Progress Bar */
+.driver-popover-progress-text {
+  font-size: 0.75rem !important;
+  color: #94a3b8 !important;
+  padding: 0 20px 12px 20px !important;
+  font-weight: 500 !important;
+}
+
+/* Footer / Buttons Container */
+.driver-popover-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 12px 16px !important;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+  gap: 8px !important;
+}
+
+/* All Buttons Base */
+.driver-popover-footer button {
+  padding: 10px 20px !important;
+  border-radius: 10px !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Previous Button */
+.driver-popover-prev-btn {
+  background: white !important;
+  color: #64748b !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.driver-popover-prev-btn:hover {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Next Button */
+.driver-popover-next-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  color: white !important;
+  box-shadow:
+    0 4px 14px rgba(99, 102, 241, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.driver-popover-next-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow:
+    0 6px 20px rgba(99, 102, 241, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Close Button */
+.driver-popover-close-btn {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  background: rgba(100, 116, 139, 0.1) !important;
+  color: #94a3b8 !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+.driver-popover-close-btn:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+}
+
+/* Highlighted Element */
+.driver-active-element {
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow:
+    0 0 0 6px #ffffff,
+    0 0 0 8px rgba(99, 241, 227, 0.3),
+    0 8px 30px rgba(0, 0, 0, 0.2) !important;
+  position: relative !important;
+  z-index: 10001 !important;
+}
+
+/* Force white background on highlighted element after overlay */
+#driver-highlighted-element-stage,
+.driver-highlighted-element-stage {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+/* SVG Overlay - make the cutout area have white fill */
+.driver-overlay svg rect {
+  fill: #ffffff !important;
+}
+
+/* Animation */
+.driver-popover {
+  animation: popoverSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes popoverSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
