@@ -212,9 +212,26 @@ export const useProductTour = () => {
     localStorage.removeItem(TOUR_STATE_KEY)
   }
 
+  // Check if tour should auto-start for new users
+  const checkAndAutoStart = () => {
+    if (typeof window === 'undefined') return
+
+    const isCompleted = localStorage.getItem(TOUR_COMPLETED_KEY)
+    const isDashboard = route.path.includes('/dashboard')
+
+    // Auto-start only if: not completed AND on dashboard page
+    if (!isCompleted && isDashboard) {
+      console.log('[Tour] Auto-starting for new user...')
+      setTimeout(() => {
+        startTour(0)
+      }, 1500) // Wait for page to fully render
+    }
+  }
+
   return {
     startTour,
     resetTour,
+    checkAndAutoStart,
     isActive,
   }
 }

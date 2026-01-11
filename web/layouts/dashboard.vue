@@ -233,5 +233,8 @@
         router.push('/companies')
       }
     }
+
+    // Auto-start product tour for new users
+    tour.checkAndAutoStart()
   })
 </script>
