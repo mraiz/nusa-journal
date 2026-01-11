@@ -8,6 +8,6 @@ export default defineConfig({
     path: "migrations",
   },
   datasource: {
-    url: process.env["REGISTRY_DATABASE_URL"] || process.env["DATABASE_URL"],
+    url: process.env["REGISTRY_DATABASE_URL"],
   },
 });

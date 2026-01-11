@@ -11,13 +11,13 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3100,
         DATABASE_URL:
-          "postgresql://nusawork:nusajournal2026@localhost:5432/nusa_journal?schema=public",
+          "postgresql://nusawork:nu54n3t2022%21@127.0.0.1:5432/nusa_journal_app?schema=public",
         REGISTRY_DATABASE_URL:
-          "postgresql://nusawork:nusajournal2026@localhost:5432/nusa_journal_registry?schema=public",
-        TENANT_DB_HOST: "localhost",
+          "postgresql://nusawork:nu54n3t2022%21@127.0.0.1:5432/nusa_journal_registry?schema=public",
+        TENANT_DB_HOST: "127.0.0.1",
         TENANT_DB_PORT: "5432",
         TENANT_DB_USER: "nusawork",
-        TENANT_DB_PASSWORD: "nusajournal2026",
+        TENANT_DB_PASSWORD: "nu54n3t2022!",
         JWT_ACCESS_SECRET: "nusa-journal-jwt-secret-production-2026",
         JWT_REFRESH_SECRET: "nusa-journal-refresh-secret-production-2026",
         JWT_EXPIRATION: "7d",

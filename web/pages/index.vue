@@ -21,13 +21,16 @@
       <nav class="glass-effect border-b sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex items-center justify-between h-16">
-            <div class="flex items-center gap-3">
+            <!-- Responsive Logo -->
+            <div class="flex items-center gap-2 md:gap-3">
               <div
-                class="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-xl flex items-center justify-center shadow-soft"
+                class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg md:rounded-xl flex items-center justify-center shadow-soft"
               >
-                <span class="text-2xl">📊</span>
+                <span class="text-xl md:text-2xl">📊</span>
               </div>
-              <span class="text-xl font-bold text-gradient-primary">Nusa Journal</span>
+              <span class="hidden md:block text-xl font-bold text-gradient-primary"
+                >Nusa Journal</span
+              >
             </div>
             <div class="hidden md:flex items-center gap-6 text-sm font-medium text-neutral-600">
               <a href="#features" class="hover:text-primary-600 transition-colors">Fitur</a>
@@ -36,9 +39,26 @@
               >
               <a href="#modules" class="hover:text-primary-600 transition-colors">Modul</a>
             </div>
-            <div class="flex items-center gap-3">
-              <NuxtLink to="/auth/login" class="btn btn-secondary"> Masuk </NuxtLink>
-              <NuxtLink to="/auth/register" class="btn btn-primary"> Daftar Gratis </NuxtLink>
+            <div class="flex items-center gap-2 md:gap-3">
+              <template v-if="authStore.isAuthenticated">
+                <NuxtLink to="/companies" class="btn btn-primary btn-sm md:btn-md">
+                  Dashboard
+                </NuxtLink>
+              </template>
+              <template v-else>
+                <NuxtLink
+                  to="/auth/login"
+                  class="btn btn-secondary btn-sm md:btn-md px-3 text-xs md:text-sm"
+                >
+                  Masuk
+                </NuxtLink>
+                <NuxtLink
+                  to="/auth/register"
+                  class="btn btn-primary btn-sm md:btn-md px-3 text-xs md:text-sm"
+                >
+                  <span class="hidden sm:inline">Daftar</span> Gratis
+                </NuxtLink>
+              </template>
             </div>
           </div>
         </div>
@@ -54,7 +74,9 @@
             PSAK-Compliant Accounting System
           </div>
 
-          <h1 class="text-5xl md:text-6xl font-bold mb-6 animate-slide-up">
+          <h1
+            class="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 animate-slide-up leading-tight"
+          >
             <span class="text-gradient-primary">Sistem Akuntansi</span>
             <br />
             <span class="text-neutral-800">Modern & Profesional</span>
@@ -66,10 +88,13 @@
           </p>
 
           <div
-            class="flex items-center justify-center gap-4 animate-slide-up"
+            class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 animate-slide-up px-4 sm:px-0"
             style="animation-delay: 0.2s"
           >
-            <NuxtLink to="/auth/register" class="btn btn-primary text-lg px-8 py-3">
+            <NuxtLink
+              to="/auth/register"
+              class="btn btn-primary text-base sm:text-lg px-8 py-3 w-full sm:w-auto justify-center"
+            >
               Mulai Sekarang
               <svg
                 class="w-5 h-5 ml-2 inline"
@@ -85,7 +110,10 @@
                 />
               </svg>
             </NuxtLink>
-            <a href="#features" class="btn btn-secondary text-lg px-8 py-3">
+            <a
+              href="#features"
+              class="btn btn-secondary text-base sm:text-lg px-8 py-3 w-full sm:w-auto justify-center"
+            >
               Pelajari Lebih Lanjut
             </a>
           </div>
@@ -332,6 +360,8 @@
 </template>
 
 <script setup lang="ts">
+  const authStore = useAuthStore()
+
   useHead({
     title: 'Nusa Journal - Sistem Akuntansi Modern untuk Bisnis Indonesia',
     meta: [

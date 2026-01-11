@@ -275,6 +275,7 @@ import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/20/solid'
 
 
 const route = useRoute()
+const slug = route.params.companySlug as string
 const companyStore = useCompanyStore()
 const accountStore = useAccountStore()
 const authStore = useAuthStore()

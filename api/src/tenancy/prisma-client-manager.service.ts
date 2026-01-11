@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
-import { RegistryPrismaService } from './registry-prisma.service';
-import * as crypto from 'crypto';
+import { Injectable, NotFoundException, Logger } from "@nestjs/common";
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
+import { RegistryPrismaService } from "./registry-prisma.service";
+import * as crypto from "crypto";
 
 interface TenantConnection {
   client: PrismaClient;
@@ -48,12 +48,24 @@ export class PrismaClientManager {
       throw new NotFoundException(`Tenant '${tenantSlug}' not found`);
     }
 
-    if (tenant.status !== 'ACTIVE' && tenant.status !== 'MIGRATING') {
-      throw new NotFoundException(`Tenant '${tenantSlug}' is not active (status: ${tenant.status})`);
+    if (tenant.status !== "ACTIVE" && tenant.status !== "MIGRATING") {
+      throw new NotFoundException(
+        `Tenant '${tenantSlug}' is not active (status: ${tenant.status})`
+      );
     }
 
     // Decrypt database credentials
-    const dbPassword = this.decrypt(tenant.dbPassword);
+    let dbPassword = this.decrypt(tenant.dbPassword);
+
+    // Dynamic Override: If tenant uses the global system DB user, prefer the environment variable password.
+    // This allows rotating the system password without breaking existing tenants.
+    if (
+      process.env.TENANT_DB_USER &&
+      tenant.dbUsername === process.env.TENANT_DB_USER &&
+      process.env.TENANT_DB_PASSWORD
+    ) {
+      dbPassword = process.env.TENANT_DB_PASSWORD;
+    }
 
     // Build connection string
     const databaseUrl = `postgresql://${tenant.dbUsername}:${encodeURIComponent(dbPassword)}@${tenant.dbHost}:${tenant.dbPort}/${tenant.dbName}?schema=public&connection_limit=10`;
@@ -67,7 +79,8 @@ export class PrismaClientManager {
     // Create Prisma client with adapter
     const client = new PrismaClient({
       adapter,
-      log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+      log:
+        process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
     });
 
     await client.$connect();
@@ -79,7 +92,9 @@ export class PrismaClientManager {
       lastUsed: new Date(),
     });
 
-    this.logger.log(`✅ Connected to tenant database: ${tenantSlug} (${tenant.dbName})`);
+    this.logger.log(
+      `✅ Connected to tenant database: ${tenantSlug} (${tenant.dbName})`
+    );
 
     return client;
   }
@@ -101,7 +116,7 @@ export class PrismaClientManager {
    * Disconnect all tenants (for app shutdown)
    */
   async disconnectAll(): Promise<void> {
-    this.logger.log('Disconnecting all tenant databases...');
+    this.logger.log("Disconnecting all tenant databases...");
     const disconnectPromises = Array.from(this.clients.entries()).map(
       async ([slug, connection]) => {
         try {
@@ -109,11 +124,11 @@ export class PrismaClientManager {
         } catch (error) {
           this.logger.error(`Error disconnecting ${slug}:`, error);
         }
-      },
+      }
     );
     await Promise.all(disconnectPromises);
     this.clients.clear();
-    this.logger.log('All tenant databases disconnected');
+    this.logger.log("All tenant databases disconnected");
   }
 
   /**
@@ -135,7 +150,9 @@ export class PrismaClientManager {
     }
 
     if (staleConnections.length > 0) {
-      this.logger.log(`Cleaned up ${staleConnections.length} stale connections`);
+      this.logger.log(
+        `Cleaned up ${staleConnections.length} stale connections`
+      );
     }
   }
 
@@ -163,27 +180,33 @@ export class PrismaClientManager {
    * Simple encryption for database passwords (use proper encryption in production)
    */
   private encrypt(text: string): string {
-    const algorithm = 'aes-256-cbc';
-    const key = Buffer.from(process.env.ENCRYPTION_KEY || 'default-key-change-this-in-prod'.padEnd(32, '0'));
+    const algorithm = "aes-256-cbc";
+    const key = Buffer.from(
+      process.env.ENCRYPTION_KEY ||
+        "default-key-change-this-in-prod".padEnd(32, "0")
+    );
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv(algorithm, key, iv);
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    return iv.toString('hex') + ':' + encrypted;
+    let encrypted = cipher.update(text, "utf8", "hex");
+    encrypted += cipher.final("hex");
+    return iv.toString("hex") + ":" + encrypted;
   }
 
   /**
    * Decrypt database passwords
    */
   private decrypt(encrypted: string): string {
-    const algorithm = 'aes-256-cbc';
-    const key = Buffer.from(process.env.ENCRYPTION_KEY || 'default-key-change-this-in-prod'.padEnd(32, '0'));
-    const parts = encrypted.split(':');
-    const iv = Buffer.from(parts[0], 'hex');
+    const algorithm = "aes-256-cbc";
+    const key = Buffer.from(
+      process.env.ENCRYPTION_KEY ||
+        "default-key-change-this-in-prod".padEnd(32, "0")
+    );
+    const parts = encrypted.split(":");
+    const iv = Buffer.from(parts[0], "hex");
     const encryptedText = parts[1];
     const decipher = crypto.createDecipheriv(algorithm, key, iv);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
+    let decrypted = decipher.update(encryptedText, "hex", "utf8");
+    decrypted += decipher.final("utf8");
     return decrypted;
   }
 

@@ -1,17 +1,18 @@
-import { 
-  Injectable, 
-  BadRequestException, 
+import {
+  Injectable,
+  BadRequestException,
   NotFoundException,
   Logger,
   ConflictException,
-} from '@nestjs/common';
-import { Role } from '@prisma/client';
-import { RegistryPrismaService } from '../tenancy/registry-prisma.service';
-import { PrismaClientManager } from '../tenancy/prisma-client-manager.service';
-import { TenantProvisioningService } from '../tenancy/tenant-provisioning.service';
-import { CreateCompanyDto } from './dto/create-company.dto';
-import { InviteUserDto } from './dto/invite-user.dto';
-import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
+} from "@nestjs/common";
+import { Role } from "@prisma/client";
+import { RegistryPrismaService } from "../tenancy/registry-prisma.service";
+import { PrismaClientManager } from "../tenancy/prisma-client-manager.service";
+import { TenantProvisioningService } from "../tenancy/tenant-provisioning.service";
+import { CreateCompanyDto } from "./dto/create-company.dto";
+import { InviteUserDto } from "./dto/invite-user.dto";
+import { UpdateCompanyUserDto } from "./dto/update-company-user.dto";
+import { JoinCompanyDto } from "./dto/join-company.dto";
 
 @Injectable()
 export class CompanyService {
@@ -20,13 +21,18 @@ export class CompanyService {
   constructor(
     private registryPrisma: RegistryPrismaService,
     private prismaClientManager: PrismaClientManager,
-    private provisioningService: TenantProvisioningService,
+    private provisioningService: TenantProvisioningService
   ) {}
 
   /**
    * Create new company with automatic database provisioning
    */
-  async createCompany(userId: string, userEmail: string, userName: string, dto: CreateCompanyDto) {
+  async createCompany(
+    userId: string,
+    userEmail: string,
+    userName: string,
+    dto: CreateCompanyDto
+  ) {
     // Auto-generate slug from name if not provided
     const slug = dto.slug || this.generateSlug(dto.name);
 
@@ -39,13 +45,15 @@ export class CompanyService {
       throw new ConflictException(`Company with slug '${slug}' already exists`);
     }
 
-    this.logger.log(`Creating company '${dto.name}' with slug '${slug}' for user ${userId}`);
+    this.logger.log(
+      `Creating company '${dto.name}' with slug '${slug}' for user ${userId}`
+    );
 
     // Step 1: Provision tenant database
     const tenantId = await this.provisioningService.provisionTenant({
       slug,
       name: dto.name,
-      plan: dto.plan || 'STARTER',
+      plan: dto.plan || "STARTER",
     });
 
     this.logger.log(`Tenant provisioned: ${tenantId}`);
@@ -69,7 +77,7 @@ export class CompanyService {
         data: {
           email: userEmail,
           name: userName,
-          password: '', // User already authenticated via registry, no password needed
+          password: "", // User already authenticated via registry, no password needed
         },
       });
 
@@ -80,8 +88,8 @@ export class CompanyService {
         data: {
           userId: tenantUser.id,
           companyId: company.id,
-          role: 'ADMIN',
-          status: 'APPROVED',
+          role: "ADMIN",
+          status: "APPROVED",
         },
       });
 
@@ -92,19 +100,139 @@ export class CompanyService {
         id: company.id,
         name: company.name,
         slug: company.slug,
-        role: 'ADMIN',
+        role: "ADMIN",
         createdAt: company.createdAt,
       };
     } catch (error) {
       this.logger.error(`Failed to create company in tenant DB:`, error);
-      
+
       // Cleanup: Mark tenant as suspended
       await this.registryPrisma.tenant.update({
         where: { id: tenantId },
-        data: { status: 'SUSPENDED' },
+        data: { status: "SUSPENDED" },
       });
 
-      throw new BadRequestException('Failed to create company. Please try again.');
+      throw new BadRequestException(
+        "Failed to create company. Please try again."
+      );
+    }
+  }
+
+  /**
+   * Join an existing company by slug
+   */
+  async joinCompany(
+    userId: string,
+    userEmail: string,
+    userName: string,
+    dto: JoinCompanyDto
+  ) {
+    const { slug } = dto;
+
+    // Step 1: Verify tenant exists in registry
+    const tenant = await this.registryPrisma.tenant.findUnique({
+      where: { slug },
+    });
+
+    if (!tenant) {
+      throw new NotFoundException(`Company with slug '${slug}' not found`);
+    }
+
+    if (tenant.status !== "ACTIVE") {
+      throw new BadRequestException("Company is not active");
+    }
+
+    // Step 2: Get tenant Prisma client
+    const tenantPrisma = await this.prismaClientManager.getClient(slug);
+
+    // Get company details from tenant DB
+    const company = await tenantPrisma.company.findFirst();
+    if (!company) {
+      throw new NotFoundException("Company configuration error");
+    }
+
+    try {
+      // Step 3: Ensure User exists in Tenant DB
+      let tenantUser = await tenantPrisma.user.findUnique({
+        where: { email: userEmail },
+      });
+
+      if (!tenantUser) {
+        // Create user in tenant DB if not exists
+        tenantUser = await tenantPrisma.user.create({
+          data: {
+            email: userEmail,
+            name: userName,
+            password: "", // Dummy password
+          },
+        });
+        this.logger.log(
+          `Created user ${userEmail} in tenant ${slug} for join request`
+        );
+      }
+
+      // Step 4: Check existing membership
+      const existingMembership = await tenantPrisma.companyUser.findUnique({
+        where: {
+          userId_companyId: {
+            userId: tenantUser.id,
+            companyId: company.id,
+          },
+        },
+      });
+
+      if (existingMembership) {
+        if (existingMembership.status === "APPROVED") {
+          return {
+            message: "Already a member",
+            status: "APPROVED",
+            company: { id: company.id, name: company.name, slug: company.slug },
+          };
+        } else if (existingMembership.status === "PENDING") {
+          return {
+            message: "Join request already pending",
+            status: "PENDING",
+            company: { id: company.id, name: company.name, slug: company.slug },
+          };
+        } else {
+          // If REJECTED, maybe allow re-join? Let's throw for now or re-open.
+          // Let's re-open to PENDING
+          await tenantPrisma.companyUser.update({
+            where: { id: existingMembership.id },
+            data: { status: "PENDING" },
+          });
+          return {
+            message: "Join request resubmitted",
+            status: "PENDING",
+            company: { id: company.id, name: company.name, slug: company.slug },
+          };
+        }
+      }
+
+      // Step 5: Create Membership (Pending)
+      await tenantPrisma.companyUser.create({
+        data: {
+          userId: tenantUser.id,
+          companyId: company.id,
+          role: "FINANCE", // Default role
+          status: "PENDING",
+        },
+      });
+
+      this.logger.log(`User ${userEmail} requested to join ${slug}`);
+
+      return {
+        message: "Join request submitted",
+        status: "PENDING",
+        company: {
+          id: company.id,
+          name: company.name,
+          slug: company.slug,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Failed to join company ${slug}:`, error);
+      throw new BadRequestException("Failed to process join request");
     }
   }
 
@@ -114,7 +242,7 @@ export class CompanyService {
   async getUserCompanies(userId: string, userEmail: string) {
     // Find all tenants
     const tenants = await this.registryPrisma.tenant.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: "ACTIVE" },
     });
 
     const companies = [];
@@ -122,7 +250,9 @@ export class CompanyService {
     // Check each tenant for user membership
     for (const tenant of tenants) {
       try {
-        const tenantPrisma = await this.prismaClientManager.getClient(tenant.slug);
+        const tenantPrisma = await this.prismaClientManager.getClient(
+          tenant.slug
+        );
 
         // Find user by email in this tenant
         const user = await tenantPrisma.user.findUnique({
@@ -135,7 +265,7 @@ export class CompanyService {
         const companyUsers = await tenantPrisma.companyUser.findMany({
           where: {
             userId: user.id,
-            status: 'APPROVED',
+            status: { in: ["APPROVED", "PENDING"] },
           },
           include: {
             company: true,
@@ -170,11 +300,11 @@ export class CompanyService {
       include: {
         accountsReceivable: { select: { id: true, code: true, name: true } },
         accountsPayable: { select: { id: true, code: true, name: true } },
-      }
+      },
     });
 
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     return company;
@@ -183,12 +313,15 @@ export class CompanyService {
   /**
    * Update company settings (AR/AP accounts)
    */
-  async updateCompanySettings(tenantSlug: string, dto: { accountsReceivableId?: string; accountsPayableId?: string }) {
+  async updateCompanySettings(
+    tenantSlug: string,
+    dto: { accountsReceivableId?: string; accountsPayableId?: string }
+  ) {
     const tenantPrisma = await this.prismaClientManager.getClient(tenantSlug);
 
     const company = await tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     const updated = await tenantPrisma.company.update({
@@ -200,7 +333,7 @@ export class CompanyService {
       include: {
         accountsReceivable: { select: { id: true, code: true, name: true } },
         accountsPayable: { select: { id: true, code: true, name: true } },
-      }
+      },
     });
 
     this.logger.log(`Company settings updated for ${tenantSlug}`);
@@ -211,13 +344,18 @@ export class CompanyService {
   /**
    * Invite user to company
    */
-  async inviteUser(tenantSlug: string, dto: InviteUserDto, invitedBy: string, targetStatus: 'PENDING' | 'APPROVED' = 'PENDING') {
+  async inviteUser(
+    tenantSlug: string,
+    dto: InviteUserDto,
+    invitedBy: string,
+    targetStatus: "PENDING" | "APPROVED" = "PENDING"
+  ) {
     const tenantPrisma = await this.prismaClientManager.getClient(tenantSlug);
 
     // Get company
     const company = await tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     // Check if user already exists in this tenant
@@ -227,35 +365,39 @@ export class CompanyService {
 
     // If Direct Add (Admin), User MUST exist (or we decide logic).
     // User Requirement: "email yang dimaksud sudah terdaftar"
-    if (targetStatus === 'APPROVED' && !user) {
-        // Option 1: Error if not found
-        // Option 2: Check Registry? But we are in Tenant Context.
-        // If "sudah terdaftar" means in the App (Registry), we should check Registry.
-        // But for now, let's assume they mean "Registered in the System".
-        // Accessing Registry from here is possible via `registryPrisma`.
-        const registryUser = await (this.registryPrisma as any).user.findUnique({ where: { email : dto.email }});
-        
-        if (!registryUser) {
-             throw new NotFoundException(`User with email ${dto.email} not found in system.`);
-        }
+    if (targetStatus === "APPROVED" && !user) {
+      // Option 1: Error if not found
+      // Option 2: Check Registry? But we are in Tenant Context.
+      // If "sudah terdaftar" means in the App (Registry), we should check Registry.
+      // But for now, let's assume they mean "Registered in the System".
+      // Accessing Registry from here is possible via `registryPrisma`.
+      const registryUser = await (this.registryPrisma as any).user.findUnique({
+        where: { email: dto.email },
+      });
 
-        // If found in registry but not tenant, CREATE in tenant
-        user = await tenantPrisma.user.create({
-            data: {
-                id: registryUser.id, // Keep same ID for consistency if possible? 
-                // Wait, Tenant User ID might differ from Registry ID ideally not, but Tenant Isolation usually implies separate IDs or synced IDs.
-                // In my `createCompany`, I created Tenant User. I didn't enforce ID sync.
-                // Let's look at `createCompany`: `tenantPrisma.user.create`. ID is UUID.
-                // So Tenant User ID != Registry User ID usually.
-                // But for simplicity in authentication, `JwtStrategy` uses Registry ID?
-                // Wait, `JwtStrategy` verifies against `prisma.user` (Registry/Global).
-                // So Tenant DB `User` table is mostly for relational integrity (Foreign Keys).
-                // It should sync email/name.
-                email: registryUser.email,
-                name: registryUser.name,
-                password: '',
-            }
-        });
+      if (!registryUser) {
+        throw new NotFoundException(
+          `User with email ${dto.email} not found in system.`
+        );
+      }
+
+      // If found in registry but not tenant, CREATE in tenant
+      user = await tenantPrisma.user.create({
+        data: {
+          id: registryUser.id, // Keep same ID for consistency if possible?
+          // Wait, Tenant User ID might differ from Registry ID ideally not, but Tenant Isolation usually implies separate IDs or synced IDs.
+          // In my `createCompany`, I created Tenant User. I didn't enforce ID sync.
+          // Let's look at `createCompany`: `tenantPrisma.user.create`. ID is UUID.
+          // So Tenant User ID != Registry User ID usually.
+          // But for simplicity in authentication, `JwtStrategy` uses Registry ID?
+          // Wait, `JwtStrategy` verifies against `prisma.user` (Registry/Global).
+          // So Tenant DB `User` table is mostly for relational integrity (Foreign Keys).
+          // It should sync email/name.
+          email: registryUser.email,
+          name: registryUser.name,
+          password: "",
+        },
+      });
     }
 
     // If user doesn't exist (and not direct add OR direct add failed check above which throws), create them
@@ -263,8 +405,8 @@ export class CompanyService {
       user = await tenantPrisma.user.create({
         data: {
           email: dto.email,
-          name: dto.email.split('@')[0], 
-          password: '', 
+          name: dto.email.split("@")[0],
+          password: "",
         },
       });
     }
@@ -280,7 +422,7 @@ export class CompanyService {
     });
 
     if (existing) {
-      throw new ConflictException('User already invited or is a member');
+      throw new ConflictException("User already invited or is a member");
     }
 
     // Create invitation / membership
@@ -302,7 +444,9 @@ export class CompanyService {
       },
     });
 
-    this.logger.log(`User ${dto.email} added to ${tenantSlug} as ${dto.role} with status ${targetStatus}`);
+    this.logger.log(
+      `User ${dto.email} added to ${tenantSlug} as ${dto.role} with status ${targetStatus}`
+    );
 
     return {
       userId: user.id,
@@ -320,7 +464,7 @@ export class CompanyService {
 
     const company = await tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     const companyUser = await tenantPrisma.companyUser.findUnique({
@@ -334,18 +478,18 @@ export class CompanyService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('User not found in company');
+      throw new NotFoundException("User not found in company");
     }
 
-    if (companyUser.status === 'APPROVED') {
-      throw new BadRequestException('User already approved');
+    if (companyUser.status === "APPROVED") {
+      throw new BadRequestException("User already approved");
     }
 
     const updateData: any = {
-       status: 'APPROVED',
-    }
+      status: "APPROVED",
+    };
     if (role) {
-       updateData.role = role
+      updateData.role = role;
     }
 
     // Approve user
@@ -386,7 +530,7 @@ export class CompanyService {
 
     const company = await tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     const companyUser = await tenantPrisma.companyUser.findUnique({
@@ -399,7 +543,7 @@ export class CompanyService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('User not found in company');
+      throw new NotFoundException("User not found in company");
     }
 
     // Soft delete
@@ -411,24 +555,28 @@ export class CompanyService {
         },
       },
       data: {
-        status: 'REJECTED',
+        status: "REJECTED",
       },
     });
 
     this.logger.log(`User ${userId} removed from ${tenantSlug}`);
 
-    return { message: 'User removed successfully' };
+    return { message: "User removed successfully" };
   }
 
   /**
    * Update user role
    */
-  async updateUserRole(tenantSlug: string, userId: string, dto: UpdateCompanyUserDto) {
+  async updateUserRole(
+    tenantSlug: string,
+    userId: string,
+    dto: UpdateCompanyUserDto
+  ) {
     const tenantPrisma = await this.prismaClientManager.getClient(tenantSlug);
 
     const company = await tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     const companyUser = await tenantPrisma.companyUser.findUnique({
@@ -441,10 +589,10 @@ export class CompanyService {
     });
 
     if (!companyUser) {
-      throw new NotFoundException('User not found in company');
+      throw new NotFoundException("User not found in company");
     }
 
-    const updated = await tenantPrisma.companyUser.update({
+    const updated = (await tenantPrisma.companyUser.update({
       where: {
         userId_companyId: {
           userId,
@@ -455,11 +603,13 @@ export class CompanyService {
         role: dto.role as Role,
       },
       include: {
-        user: { select: { email: true, name: true } }
-      }
-    }) as any; // Cast to any to avoid "Property 'user' does not exist" if inference fails
+        user: { select: { email: true, name: true } },
+      },
+    })) as any; // Cast to any to avoid "Property 'user' does not exist" if inference fails
 
-    this.logger.log(`User ${updated.user.email} role updated to ${dto.role} in ${tenantSlug}`);
+    this.logger.log(
+      `User ${updated.user.email} role updated to ${dto.role} in ${tenantSlug}`
+    );
 
     return {
       userId: updated.userId,
@@ -475,14 +625,14 @@ export class CompanyService {
 
     const company = await tenantPrisma.company.findFirst();
     if (!company) {
-      throw new NotFoundException('Company not found');
+      throw new NotFoundException("Company not found");
     }
 
     const users = await tenantPrisma.companyUser.findMany({
       where: {
         companyId: company.id,
         status: {
-          in: ['APPROVED', 'PENDING'],
+          in: ["APPROVED", "PENDING"],
         },
       },
       include: {
@@ -496,11 +646,11 @@ export class CompanyService {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
-    return users.map(cu => ({
+    return users.map((cu) => ({
       userId: cu.user.id,
       email: cu.user.email,
       name: cu.user.name,
@@ -516,8 +666,8 @@ export class CompanyService {
   private generateSlug(name: string): string {
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
       .substring(0, 50);
   }
 }

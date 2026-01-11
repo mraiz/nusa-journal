@@ -10,17 +10,18 @@ import {
   HttpCode,
   HttpStatus,
   ValidationPipe,
-} from '@nestjs/common';
-import { CompanyService } from './company.service';
-import { CreateCompanyDto } from './dto/create-company.dto';
-import { InviteUserDto } from './dto/invite-user.dto';
-import { UpdateCompanySettingsDto } from './dto/update-company-settings.dto';
-import { UpdateCompanyUserDto } from './dto/update-company-user.dto';
-import { ApproveUserDto } from './dto/approve-user.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+} from "@nestjs/common";
+import { CompanyService } from "./company.service";
+import { CreateCompanyDto } from "./dto/create-company.dto";
+import { JoinCompanyDto } from "./dto/join-company.dto";
+import { InviteUserDto } from "./dto/invite-user.dto";
+import { UpdateCompanySettingsDto } from "./dto/update-company-settings.dto";
+import { UpdateCompanyUserDto } from "./dto/update-company-user.dto";
+import { ApproveUserDto } from "./dto/approve-user.dto";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { Roles } from "../common/decorators/roles.decorator";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
 
 @Controller()
 export class CompanyController {
@@ -29,25 +30,42 @@ export class CompanyController {
   /**
    * Create new company (no tenant context needed)
    */
-  @Post('companies')
+  @Post("companies")
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   async createCompany(
     @CurrentUser() user: any,
-    @Body(ValidationPipe) dto: CreateCompanyDto,
+    @Body(ValidationPipe) dto: CreateCompanyDto
   ) {
     // Get user details from JWT (set by auth guard)
     const userId = user.userId;
     const userEmail = user.email; // We need to add email to JWT payload
-    const userName = user.name;   // We need to add name to JWT payload
+    const userName = user.name; // We need to add name to JWT payload
 
     return this.companyService.createCompany(userId, userEmail, userName, dto);
   }
 
   /**
+   * Join an existing company by slug
+   */
+  @Post("companies/join")
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async joinCompany(
+    @CurrentUser() user: any,
+    @Body(ValidationPipe) dto: JoinCompanyDto
+  ) {
+    const userId = user.userId;
+    const userEmail = user.email;
+    const userName = user.name;
+
+    return this.companyService.joinCompany(userId, userEmail, userName, dto);
+  }
+
+  /**
    * Get all companies user belongs to (no tenant context needed)
    */
-  @Get('companies')
+  @Get("companies")
   @UseGuards(JwtAuthGuard)
   async getUserCompanies(@CurrentUser() user: any) {
     return this.companyService.getUserCompanies(user.userId, user.email);
@@ -56,21 +74,21 @@ export class CompanyController {
   /**
    * Get current company details (tenant-scoped)
    */
-  @Get(':tenantSlug/company')
+  @Get(":tenantSlug/company")
   @UseGuards(JwtAuthGuard)
-  async getCompany(@Param('tenantSlug') tenantSlug: string) {
+  async getCompany(@Param("tenantSlug") tenantSlug: string) {
     return this.companyService.getCompany(tenantSlug);
   }
 
   /**
    * Update company settings (AR/AP accounts)
    */
-  @Patch(':tenantSlug/company/settings')
+  @Patch(":tenantSlug/company/settings")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles("ADMIN")
   async updateCompanySettings(
-    @Param('tenantSlug') tenantSlug: string,
-    @Body(ValidationPipe) dto: UpdateCompanySettingsDto,
+    @Param("tenantSlug") tenantSlug: string,
+    @Body(ValidationPipe) dto: UpdateCompanySettingsDto
   ) {
     return this.companyService.updateCompanySettings(tenantSlug, dto);
   }
@@ -78,33 +96,38 @@ export class CompanyController {
   /**
    * Invite user to company (tenant-scoped, Admin only)
    */
-  @Post(':tenantSlug/company/invite')
+  @Post(":tenantSlug/company/invite")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'FINANCE', 'ACCOUNTANT', 'AUDITOR')
+  @Roles("ADMIN", "FINANCE", "ACCOUNTANT", "AUDITOR")
   @HttpCode(HttpStatus.OK)
   async inviteUser(
-    @Param('tenantSlug') tenantSlug: string,
+    @Param("tenantSlug") tenantSlug: string,
     @Body(ValidationPipe) dto: InviteUserDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: any
   ) {
     // Check if current user is ADMIN
-    const isAdmin = user.roles && user.roles.includes('ADMIN');
-    const targetStatus = isAdmin ? 'APPROVED' : 'PENDING';
-    
-    return this.companyService.inviteUser(tenantSlug, dto, user.userId, targetStatus);
+    const isAdmin = user.roles && user.roles.includes("ADMIN");
+    const targetStatus = isAdmin ? "APPROVED" : "PENDING";
+
+    return this.companyService.inviteUser(
+      tenantSlug,
+      dto,
+      user.userId,
+      targetStatus
+    );
   }
 
   /**
    * Approve user to join company (tenant-scoped, Admin only)
    */
-  @Post(':tenantSlug/company/approve/:userId')
+  @Post(":tenantSlug/company/approve/:userId")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.OK)
   async approveUser(
-    @Param('tenantSlug') tenantSlug: string,
-    @Param('userId') userId: string,
-    @Body(ValidationPipe) dto: ApproveUserDto,
+    @Param("tenantSlug") tenantSlug: string,
+    @Param("userId") userId: string,
+    @Body(ValidationPipe) dto: ApproveUserDto
   ) {
     return this.companyService.approveUser(tenantSlug, userId, dto.role);
   }
@@ -112,13 +135,13 @@ export class CompanyController {
   /**
    * Remove user from company (tenant-scoped, Admin only)
    */
-  @Delete(':tenantSlug/company/users/:userId')
+  @Delete(":tenantSlug/company/users/:userId")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.OK)
   async removeUser(
-    @Param('tenantSlug') tenantSlug: string,
-    @Param('userId') userId: string,
+    @Param("tenantSlug") tenantSlug: string,
+    @Param("userId") userId: string
   ) {
     return this.companyService.removeUser(tenantSlug, userId);
   }
@@ -126,14 +149,14 @@ export class CompanyController {
   /**
    * Update user role (tenant-scoped, Admin only)
    */
-  @Patch(':tenantSlug/company/users/:userId')
+  @Patch(":tenantSlug/company/users/:userId")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Roles("ADMIN")
   @HttpCode(HttpStatus.OK)
   async updateUserRole(
-    @Param('tenantSlug') tenantSlug: string,
-    @Param('userId') userId: string,
-    @Body(ValidationPipe) dto: UpdateCompanyUserDto,
+    @Param("tenantSlug") tenantSlug: string,
+    @Param("userId") userId: string,
+    @Body(ValidationPipe) dto: UpdateCompanyUserDto
   ) {
     return this.companyService.updateUserRole(tenantSlug, userId, dto);
   }
@@ -141,9 +164,9 @@ export class CompanyController {
   /**
    * Get all users in company (tenant-scoped)
    */
-  @Get(':tenantSlug/company/users')
+  @Get(":tenantSlug/company/users")
   @UseGuards(JwtAuthGuard)
-  async getCompanyUsers(@Param('tenantSlug') tenantSlug: string) {
+  async getCompanyUsers(@Param("tenantSlug") tenantSlug: string) {
     return this.companyService.getCompanyUsers(tenantSlug);
   }
 }
